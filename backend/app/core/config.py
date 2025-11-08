@@ -59,7 +59,13 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
+
+    # Legacy / optional environment variables for compatibility.
+    port: Optional[int] = Field(default=8000, env="PORT")
+    jwt_secret: Optional[str] = Field(default=None, env="JWT_SECRET")
+    google_maps_api_key: Optional[str] = Field(default=None, env="GOOGLE_MAPS_API_KEY")
 
 @lru_cache
 def get_settings() -> Settings:
