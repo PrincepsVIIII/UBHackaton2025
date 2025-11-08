@@ -1,13 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Login | My App</title>
+  <meta charset="utf-8" />
+  <title>Login</title>
   <script src="https://cdn.auth0.com/js/auth0-spa-js/2.5/auth0-spa-js.production.js"></script>
-  <script src="/auth.js" defer></script>
+  <script src="auth.js" defer></script>
+  <style>
+    body{font-family:system-ui,Arial;margin:40px}
+    button{padding:10px 16px;font-size:16px}
+  </style>
 </head>
 <body>
-  <h1>Login Page</h1>
-  <button onclick="login()">Login with Auth0</button>
+  <h2>Sign in</h2>
+  <div id="status">Not signed in</div>
+  <button id="btnLogin">Login</button>
+  <button id="btnLogout" style="display:none">Logout</button>
+
+  <script>
+    // after auth.js loads, an `authReady()` function will be called (defined in auth.js)
+    function onSignedIn(user) {
+      document.getElementById('status').textContent = 'Signed in as: ' + (user?.name || user?.email || 'unknown');
+      // YOUR ROUTING DECISION: check a claim or app_metadata and route accordingly
+      // e.g. const roles = user['https://yourapp.example/roles'] || [];
+      // if (roles.includes('volunteer')) { window.location = '/volunteer-view.html'; }
+      // else if (roles.includes('user')) { window.location = '/submit-report.html'; }
+      // else { window.location = '/guest-view.html'; }
+      // (Comment out the redirect during development if you just want to display user)
+    }
+    function onSignedOut() {
+      document.getElementById('status').textContent = 'Not signed in';
+    }
+
+    // Expose handlers so auth.js can call them
+    window.onSignedIn = onSignedIn;
+    window.onSignedOut = onSignedOut;
+  </script>
 </body>
 </html>
