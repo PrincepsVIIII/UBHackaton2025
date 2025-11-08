@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Monopoly Tycoon Clicker</title>
+    <style>
+        body {
+            background: radial-gradient(circle, #1c1f26, #0e0f13);
+            color: #f8f8f8;
+            font-family: 'Segoe UI', sans-serif;
+            text-align: center;
+            padding: 40px;
+        }
+        h1 { color: #00ff99; }
+        .money { font-size: 2em; margin: 20px 0; }
+        button {
+            background-color: #00ff99;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #111;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: 0.2s;
+        }
+        button:hover { background-color: #33ffaa; }
+        .properties {
+            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .prop-card {
+            background: #181a1f;
+            border: 1px solid #333;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 10px;
+            width: 250px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>💵 Monopoly Tycoon Clicker 💰</h1>
+    <div class="money">Cash: $<span id="money">0</span></div>
+    <div>Income/sec: $<span id="income">0</span></div>
+    <button id="click-btn">Collect Cash</button>
+
+    <div class="properties">
+        <h2>🏠 Properties</h2>
+        {% for prop in properties %}
+        <div class="prop-card">
+            <strong>{{ prop.name }}</strong><br>
+            Cost: ${{ prop.cost }}<br>
+            Income: ${{ prop.income }}/s<br>
+            <button onclick="buyProperty('{{ prop.name }}')">Buy</button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        async function updateStatus() {
+            const res = await fetch('/status');
+            const data = await res.json();
+            document.getElementById('money').innerText = data.money;
+            document.getElementById('income').innerText = data.income_per_sec;
+        }
+
+        document.getElementById('click-btn').addEventListener('click', async () => {
+            const res = await fetch('/click', { method: 'POST' });
+            const data = await res.json();
+            document.getElementById('money').innerText = data.money;
+        });
+
+        async function buyProperty(name) {
+            const res = await fetch('/buy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ property: name })
+            });
+            const data = await res.json();
+            if (data.error) {
+                alert(data.error);
+            } else {
+                updateStatus();
+            }
+        }
+
+        setInterval(updateStatus, 1000);
+        updateStatus();
+    </script>
+</body>
+</html>
