@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assistance Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f3f4f6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .note-label {
+      color: #6b7280;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      padding: 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      resize: none;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+    }
+
+    button {
+      width: 100%;
+      margin-top: 1rem;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 12px;
+      background-color: #2563eb;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    // Create the container
+    const container = document.createElement("div");
+    container.className = "container";
+
+    // Create the gray label
+    const label = document.createElement("label");
+    label.className = "note-label";
+    label.textContent = "Describe your situation that you need assistance with";
+
+    // Create textarea
+    const textarea = document.createElement("textarea");
+    textarea.placeholder = "Type your message here...";
+    textarea.id = "noteBox";
+
+    // Create button
+    const button = document.createElement("button");
+    button.textContent = "Submit";
+
+    // Add submit functionality
+    button.addEventListener("click", (e) => {
+      e.preventDefault();
+      const note = textarea.value.trim();
+      if (note) {
+        alert("Submitted note: " + note);
+        textarea.value = "";
+      } else {
+        alert("Please enter something before submitting.");
+      }
+    });
+
+    // Append everything
+    container.appendChild(label);
+    container.appendChild(textarea);
+    container.appendChild(button);
+    document.getElementById("app").appendChild(container);
+  </script>
+</body>
+</html>
