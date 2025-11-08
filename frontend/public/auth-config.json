@@ -1,0 +1,7 @@
+{
+  "domain": "dev-yojcvvm0l5hqle2t.us.auth0.com",
+  "clientId": "jsqQVPYoB8zr1AuXkwRC4DK2a7asZQDB",
+  "authorizationParams": {
+    "redirect_uri": "http://localhost:3000/login.html"
+  }
+}

@@ -1,28 +1,31 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from '../api/api';
+// frontend/src/pages/LoginPage.js
+import React, { useState } from 'react';
 
 function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    try {
-      const res = await axios.post('/auth/login', { email, password });
-      localStorage.setItem('token', res.data.token);
-      navigate('/dashboard');
-    } catch(err) {
-      alert('Login failed');
-    }
+  const handleLogin = (e) => {
+    e.preventDefault();
+    alert(`Logged in as: ${username}`);
+    setUsername('');
+    setPassword('');
   };
 
   return (
     <div>
       <h2>Login</h2>
-      <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
-      <input type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} />
-      <button onClick={handleLogin}>Login</button>
+      <form onSubmit={handleLogin}>
+        <div>
+          <label>Username: </label>
+          <input value={username} onChange={(e) => setUsername(e.target.value)} required />
+        </div>
+        <div>
+          <label>Password: </label>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        </div>
+        <button type="submit">Login</button>
+      </form>
     </div>
   );
 }

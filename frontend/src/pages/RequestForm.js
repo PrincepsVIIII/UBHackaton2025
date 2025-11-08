@@ -1,28 +1,32 @@
-import { useState } from 'react';
-import axios from '../api/api';
+// frontend/src/pages/RequestForm.js
+import React, { useState } from 'react';
 
 function RequestForm() {
   const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      await axios.post('/requests', { address, description });
-      alert('Request submitted!');
-      setAddress('');
-      setDescription('');
-    } catch(err) {
-      alert(err.response?.data?.message || 'Error submitting request');
-    }
+    alert(`Request submitted:\nAddress: ${address}\nDescription: ${description}`);
+    setAddress('');
+    setDescription('');
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} required />
-      <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} required />
-      <button type="submit">Submit Request</button>
-    </form>
+    <div>
+      <h2>Submit a Service Request</h2>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>Address: </label>
+          <input value={address} onChange={(e) => setAddress(e.target.value)} required />
+        </div>
+        <div>
+          <label>Description: </label>
+          <input value={description} onChange={(e) => setDescription(e.target.value)} required />
+        </div>
+        <button type="submit">Submit</button>
+      </form>
+    </div>
   );
 }
 
