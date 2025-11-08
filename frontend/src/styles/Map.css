@@ -1,0 +1,355 @@
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f4f6fb;
+  color: #1f2d3d;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.app-header {
+  background: linear-gradient(135deg, #1768ac, #3b77c4);
+  color: #fff;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(23, 104, 172, 0.25);
+}
+
+.app-shell main {
+  flex: 1;
+  display: flex;
+}
+
+.map-layout {
+  display: flex;
+  flex: 1;
+  padding: 1rem;
+  gap: 1rem;
+  min-height: calc(100vh - 220px);
+}
+
+.location-panel {
+  flex: 0 0 280px;
+  padding: 1rem;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.location-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.location-form label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  gap: 0.35rem;
+  color: #243b53;
+}
+
+.location-form input {
+  padding: 0.55rem;
+  border-radius: 8px;
+  border: 1px solid #d2dae2;
+  font-size: 1rem;
+}
+
+.location-form button {
+  padding: 0.65rem;
+  border-radius: 8px;
+  border: none;
+  background: #1768ac;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.location-form button:hover {
+  background: #14568c;
+}
+
+.location-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #4b5d73;
+}
+
+.map-section {
+  position: relative;
+  flex: 1;
+  min-height: 70vh;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1);
+}
+
+.map-container {
+  width: 100%;
+  height: 100%;
+}
+
+.score-legend {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  border-radius: 8px;
+  padding: 0.75rem;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
+  font-size: 0.85rem;
+  color: #1f2d3d;
+  z-index: 500;
+}
+
+.score-legend h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.score-legend ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.score-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(15, 23, 42, 0.2);
+  box-shadow: 0 0 4px rgba(15, 23, 42, 0.2);
+}
+
+.legend-dot--high {
+  background: #f03a47;
+}
+
+.legend-dot--medium {
+  background: #f8c12d;
+}
+
+.legend-dot--low {
+  background: #2ecc71;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loading-overlay .spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-text {
+  color: #d64545;
+  font-weight: 600;
+}
+
+.request-popup h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #12263a;
+}
+
+.request-popup p {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+  color: #2f4f75;
+}
+
+.request-popup dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 0.75rem;
+}
+
+.request-popup dt {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #12263a;
+}
+
+.request-popup dd {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.request-popup button {
+  margin-top: 0.75rem;
+  width: 100%;
+  padding: 0.6rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f59f00, #f76707);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.request-popup button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.popup-error {
+  margin: 0.5rem 0 0;
+  color: #d64545;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.request-marker {
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease;
+}
+
+.request-marker:hover {
+  transform: translateY(-4px);
+}
+
+.request-marker span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.2);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+.request-marker:hover span {
+  animation-duration: 1.2s;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.request-marker--high span {
+  background: #f03a47;
+}
+
+.request-marker--medium span {
+  background: #f8c12d;
+}
+
+.request-marker--low span {
+  background: #2ecc71;
+}
+
+.fallback-form-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border-radius: 10px;
+  background: rgba(23, 104, 172, 0.08);
+  border: 1px solid rgba(23, 104, 172, 0.2);
+}
+
+.fallback-instructions {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #1f2d3d;
+}
+
+.fallback-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fallback-form input {
+  padding: 0.55rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.95rem;
+}
+
+.fallback-form button {
+  align-self: flex-start;
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  border: none;
+  background: #1768ac;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fallback-form button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 960px) {
+  .map-layout {
+    flex-direction: column;
+  }
+
+  .location-panel {
+    flex: 1;
+  }
+
+  .map-section {
+    min-height: 60vh;
+  }
+}
+
+/* To switch to Google Maps later, swap Leaflet map-container CSS here and
+   adjust <VolunteerMap /> to render Google Map components without altering
+   the rest of the layout or API calls. */
+
