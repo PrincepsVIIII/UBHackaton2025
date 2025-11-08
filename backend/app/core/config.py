@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from pydantic import BaseSettings, EmailStr, Field, HttpUrl
+from pydantic import EmailStr, Field, HttpUrl
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Load environment variables from a local .env file if present.
 load_dotenv(override=False)
@@ -54,10 +55,11 @@ class Settings(BaseSettings):
         env="DATABASE_URL",
     )
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
 
 @lru_cache
 def get_settings() -> Settings:
