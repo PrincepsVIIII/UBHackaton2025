@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import Iterable, Optional
 
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -34,36 +36,12 @@ def create_user(
     email: str,
     name: Optional[str] = None,
     phone: Optional[str] = None,
+    role: Optional[RoleEnum] = None,
 ) -> User:
-    user = User(email=email, name=name, phone=phone)
+    user = User(email=email, name=name, phone=phone, role=role)
     db.add(user)
     db.commit()
     db.refresh(user)
-    return user
-
-
-def update_user_google_profile(
-    db: Session,
-    user: User,
-    *,
-    name: Optional[str],
-    phone: Optional[str],
-) -> User:
-    updated = False
-
-    if name and user.name != name:
-        user.name = name
-        updated = True
-
-    if phone and user.phone != phone:
-        user.phone = phone
-        updated = True
-
-    if updated:
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
     return user
 
 
@@ -201,4 +179,16 @@ def claim_help_request(
     db.refresh(request)
     db.refresh(assignment)
     return assignment
+
+
+def touch_user_last_login(db: Session, user: User) -> User:
+    """
+    Updates the user's last_login timestamp to now.
+    """
+
+    user.last_login = datetime.utcnow()
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 

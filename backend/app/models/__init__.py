@@ -57,6 +57,7 @@ class User(Base):
     phone = Column(String(50), nullable=True)
     role = Column(Enum(RoleEnum, name="user_role_enum"), nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
 
     elder_profile = relationship(
         "ElderProfile",

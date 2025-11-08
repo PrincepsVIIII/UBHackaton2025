@@ -70,6 +70,25 @@ class MeResponse(BaseModel):
         orm_mode = True
 
 
+class LoginRequest(BaseModel):
+    email: EmailStr
+    role: RoleEnum
+
+
+class LoginRequestResponse(BaseModel):
+    message: str
+    login_url: Optional[str] = Field(
+        default=None,
+        description="Magic link for demo convenience when console email is used.",
+    )
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+
 class HelpRequestBase(BaseModel):
     title: str
     description: str

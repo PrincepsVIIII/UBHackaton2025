@@ -34,6 +34,6 @@ services:
 #   cd docker
 #   docker-compose up --build
 #
-# Ensure .env at project root contains valid GOOGLE_CLIENT_ID / SECRET / APP_BASE_URL.
+# Ensure .env at project root contains SECRET_KEY / APP_BASE_URL (and email settings if used).
 # When moving to production, update APP_BASE_URL to your deployed backend URL and rebuild.
 

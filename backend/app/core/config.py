@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from pydantic import BaseSettings, Field, HttpUrl
+from pydantic import BaseSettings, EmailStr, Field, HttpUrl
 
 # Load environment variables from a local .env file if present.
 load_dotenv(override=False)
@@ -20,12 +20,34 @@ load_dotenv(override=False)
 class Settings(BaseSettings):
     app_name: str = Field("Buffalo Winter Elder Help Routing", env="APP_NAME")
     app_base_url: HttpUrl = Field(..., env="APP_BASE_URL")
-    google_client_id: str = Field(..., env="GOOGLE_CLIENT_ID")
-    google_client_secret: str = Field(..., env="GOOGLE_CLIENT_SECRET")
-    google_auth_scopes: str = Field(
-        "openid email profile",
-        description="Space-separated scopes requested from Google OAuth.",
-        env="GOOGLE_OAUTH_SCOPES",
+    secret_key: str = Field(
+        "change-this-secret-key",
+        env="SECRET_KEY",
+        description="Secret used for signing JWT tokens. Override in production.",
+    )
+    access_token_expire_minutes: int = Field(
+        60 * 24,
+        env="ACCESS_TOKEN_EXPIRE_MINUTES",
+        description="Expiry window for session tokens issued after login.",
+    )
+    login_token_expire_minutes: int = Field(
+        15,
+        env="LOGIN_TOKEN_EXPIRE_MINUTES",
+        description="Expiry window for passwordless magic links.",
+    )
+    email_from: EmailStr = Field(
+        "noreply@example.com",
+        env="EMAIL_FROM",
+        description="From address used when sending login emails.",
+    )
+    smtp_host: Optional[str] = Field(None, env="SMTP_HOST")
+    smtp_port: Optional[int] = Field(None, env="SMTP_PORT")
+    smtp_username: Optional[str] = Field(None, env="SMTP_USERNAME")
+    smtp_password: Optional[str] = Field(None, env="SMTP_PASSWORD")
+    use_console_email: bool = Field(
+        True,
+        env="EMAIL_USE_CONSOLE",
+        description="When true, login links are printed to console instead of emailing.",
     )
     database_url: str = Field(
         default=f"sqlite:///{Path.cwd() / 'app.db'}",
@@ -36,15 +58,6 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
-
-    @property
-    def google_scope_list(self) -> list[str]:
-        return [scope for scope in self.google_auth_scopes.split(" ") if scope]
-
-    @property
-    def google_redirect_uri(self) -> str:
-        return f"{self.app_base_url.rstrip('/')}/auth/google/callback"
-
 
 @lru_cache
 def get_settings() -> Settings:

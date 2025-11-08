@@ -29,7 +29,7 @@ WORKDIR /app/backend
 # Expose FastAPI default port.
 EXPOSE 8000
 
-# NOTE: Update GOOGLE_CLIENT_ID / APP_BASE_URL in ../.env before building for non-local deployments.
+# NOTE: Update SECRET_KEY / APP_BASE_URL in ../.env before building for non-local deployments.
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 

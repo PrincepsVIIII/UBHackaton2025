@@ -6,11 +6,9 @@ from __future__ import annotations
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from google.auth.transport import requests as google_requests
-from google.oauth2 import id_token
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.core.security import decode_token
 from app.db.session import get_db
 from app.models import RoleEnum, User
 from app.models import crud
@@ -23,8 +21,8 @@ async def get_current_user(
     db: Session = Depends(get_db),
 ) -> User:
     """
-    Retrieves the currently authenticated user by validating a Google ID token.
-    The client must send the token in the Authorization header (Bearer scheme).
+    Retrieves the authenticated user by validating the session JWT sent in the
+    Authorization header.
     """
 
     if credentials is None:
@@ -34,33 +32,35 @@ async def get_current_user(
         )
 
     token = credentials.credentials
-    try:
-        id_info = id_token.verify_oauth2_token(
-            token,
-            google_requests.Request(),
-            settings.google_client_id,
-        )
-    except ValueError:
+    payload = decode_token(token)
+
+    if payload.get("type") != "access":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Google ID token.",
+            detail="Invalid access token.",
         )
 
-    email = id_info.get("email")
-    if not email:
+    user_id = payload.get("sub")
+    if user_id is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email not provided in token.",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload.",
         )
 
-    name = id_info.get("name")
-    phone = id_info.get("phone_number")
+    try:
+        user_id_int = int(user_id)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token subject.",
+        ) from exc
 
-    user = crud.get_user_by_email(db, email=email)
+    user = crud.get_user_by_id(db, user_id_int)
     if user is None:
-        user = crud.create_user(db, email=email, name=name, phone=phone)
-    else:
-        crud.update_user_google_profile(db, user, name=name, phone=phone)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found.",
+        )
 
     return user
 
@@ -83,4 +83,3 @@ async def get_current_volunteer(
             detail="Volunteer role required.",
         )
     return current_user
-
