@@ -6,11 +6,15 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Install dependencies
-COPY ../frontend/package*.json ./
+COPY frontend/package*.json ./
 RUN npm install
 
-# Copy source and build
-COPY ../frontend .
+COPY frontend/vite.config.js ./vite.config.js
+COPY frontend/public ./public
+COPY frontend/src ./src
+COPY frontend/index.html ./index.html
+COPY frontend/.env* ./
+
 RUN npm run build
 
 # Runtime stage
