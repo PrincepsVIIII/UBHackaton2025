@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+
+# Frontend build stage
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+# Install dependencies
+COPY ../frontend/package*.json ./
+RUN npm install
+
+# Copy source and build
+COPY ../frontend .
+RUN npm run build
+
+# Runtime stage
+FROM node:20-alpine AS frontend
+
+WORKDIR /app
+
+# Install a lightweight static server. Swap for nginx or cloud hosting as needed.
+RUN npm install -g serve
+
+COPY --from=build /app/dist ./dist
+
+EXPOSE 3000
+
+# NOTE: Update VITE_API_BASE_URL (see frontend/.env example) when deploying to cloud.
+
+CMD ["serve", "-s", "dist", "-l", "3000"]
+

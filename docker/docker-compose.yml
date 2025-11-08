@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: bwehr-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env
+    volumes:
+      # Persist the SQLite database on the host for easy inspection/reset during the hackathon.
+      - ../backend/app.db:/app/backend/app.db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: bwehr-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      # Browser clients access backend via host loopback when using docker-compose up locally.
+      # Update this to the public API URL when deploying to the cloud (e.g., Vercel/Render).
+      - VITE_API_BASE_URL=http://localhost:8000
+    restart: unless-stopped
+
+# Usage:
+#   cd docker
+#   docker-compose up --build
+#
+# Ensure .env at project root contains valid GOOGLE_CLIENT_ID / SECRET / APP_BASE_URL.
+# When moving to production, update APP_BASE_URL to your deployed backend URL and rebuild.
+
