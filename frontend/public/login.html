@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.5/auth0-spa-js.production.js"></script>
+  <script src="auth.js" defer></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f3f4f6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+
+    h2 {
+      color: #111827;
+      margin-bottom: 1rem;
+    }
+
+    #status {
+      color: #6b7280;
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 0.75rem;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 12px;
+      background-color: #2563eb;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #1d4ed8;
+    }
+
+    #btnLogout {
+      background-color: #9ca3af;
+    }
+
+    #btnLogout:hover {
+      background-color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Sign In</h2>
+    <div id="status">Not signed in</div>
+    <button id="btnLogin">Login</button>
+    <button id="btnLogout" style="display:none">Logout</button>
+  </div>
+
+  <script>
+    // after auth.js loads, an `authReady()` function will be called (defined in auth.js)
+    function onSignedIn(user) {
+      document.getElementById('status').textContent = 
+        'Signed in as: ' + (user?.name || user?.email || 'unknown');
+
+      // YOUR ROUTING DECISION:
+      // const roles = user['https://yourapp.example/roles'] || [];
+      // if (roles.includes('volunteer')) { window.location = '/volunteer-view.html'; }
+      // else if (roles.includes('user')) { window.location = '/submit-report.html'; }
+      // else { window.location = '/guest-view.html'; }
+    }
+
+    function onSignedOut() {
+      document.getElementById('status').textContent = 'Not signed in';
+    }
+
+    // Expose handlers so auth.js can call them
+    window.onSignedIn = onSignedIn;
+    window.onSignedOut = onSignedOut;
+  </script>
+</body>
+</html>
