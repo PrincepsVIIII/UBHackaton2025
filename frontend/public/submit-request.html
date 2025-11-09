@@ -3,25 +3,188 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Assistance Page</title>
+  <title>Volunteer Profile</title>
+
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f3f4f6;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      margin: 0;
+      font-family: system-ui, Arial, sans-serif;
       min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      background-color: #f3f4f6;
+    }
+
+    /* --- Top Banner --- */
+    .top-banner {
+      background: #007bff;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .top-banner h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    .map-link {
+      display: flex;
+      align-items: center;
+      color: white;
+      text-decoration: none;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+
+    .map-link:hover {
+      background-color: rgba(255,255,255,0.1);
+    }
+
+    /* --- Main Content --- */
+    .main-content {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .task-section {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+
+    .task-section h2 {
+      margin: 0;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .task-list {
+      list-style: none;
+      padding: 0;
       margin: 0;
     }
 
-    .container {
+    .task-item {
+      padding: 1rem;
+      border-bottom: 1px solid #dee2e6;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .task-item:last-child {
+      border-bottom: none;
+    }
+
+    .task-status {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .status-active {
+      background: #e3f2fd;
+      color: #0d47a1;
+    }
+
+    .status-completed {
+      background: #e8f5e9;
+      color: #1b5e20;
+    }
+
+    .task-details h3 {
+      margin: 0 0 0.25rem 0;
+      font-size: 1rem;
+    }
+
+    .task-details p {
+      margin: 0;
+      color: #666;
+      font-size: 0.875rem;
+    }
+
+    .task-date {
+      color: #666;
+      font-size: 0.875rem;
+    }
+
+    /* --- Floating Plus Button --- */
+    .fab {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background-color: #2563eb;
+      color: white;
+      font-size: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      z-index: 1000;
+    }
+
+    .fab:hover {
+      background-color: #1d4ed8;
+    }
+
+    /* --- Overlay Popup --- */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .overlay.active {
+      display: flex;
+    }
+
+    .form-container {
       background-color: white;
       padding: 2rem;
       border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       max-width: 500px;
-      width: 100%;
+      width: 90%;
+      position: relative;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #555;
     }
 
     .note-label {
@@ -31,26 +194,29 @@
       display: block;
     }
 
-    textarea {
+    textarea, select, input {
       width: 100%;
-      height: 150px;
       padding: 0.75rem;
       border: 1px solid #d1d5db;
       border-radius: 12px;
-      resize: none;
       font-size: 1rem;
       box-sizing: border-box;
+      margin-bottom: 1rem;
     }
 
-    textarea:focus {
+    textarea {
+      height: 120px;
+      resize: none;
+    }
+
+    textarea:focus, select:focus, input:focus {
       outline: none;
       border-color: #3b82f6;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.3);
     }
 
-    button {
+    button.submit-btn {
       width: 100%;
-      margin-top: 1rem;
       padding: 0.75rem;
       border: none;
       border-radius: 12px;
@@ -61,50 +227,130 @@
       transition: background-color 0.3s ease;
     }
 
-    button:hover {
+    button.submit-btn:hover {
       background-color: #1d4ed8;
     }
   </style>
 </head>
+
 <body>
-  <div id="app"></div>
+  <!-- Top Banner -->
+  <div class="top-banner">
+    <h1>My Tasks</h1>
+    <a href="volunteer-view.html" class="map-link">
+      <span>Back to Map</span>
+    </a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="task-section">
+      <h2>Active Requests</h2>
+      <ul class="task-list" id="active-tasks"></ul>
+    </div>
+
+    <div class="task-section">
+      <h2>Request History</h2>
+      <ul class="task-list" id="task-history"></ul>
+    </div>
+  </div>
+
+  <!-- Floating Action Button -->
+  <div class="fab" id="addRequestBtn">+</div>
+
+  <!-- Overlay Form -->
+  <div class="overlay" id="overlay">
+    <div class="form-container">
+      <button class="close-btn" id="closeOverlay">&times;</button>
+
+      <label class="note-label">Priority</label>
+      <select id="priority">
+        <option>High</option>
+        <option>Medium</option>
+        <option>Low</option>
+      </select>
+
+      <label class="note-label">Help Request Details</label>
+      <textarea id="helpDetails" placeholder="Describe what you need help with..."></textarea>
+
+      <label class="note-label">Additional Notes</label>
+      <textarea id="additionalNotes" placeholder="Any extra information..."></textarea>
+
+      <label class="note-label">Preferred Contact Method</label>
+      <input id="contactMethod" type="text" placeholder="e.g. Email, Phone, Discord..." />
+
+      <button class="submit-btn" id="submitBtn">Submit</button>
+    </div>
+  </div>
 
   <script>
-    // Create the container
-    const container = document.createElement("div");
-    container.className = "container";
+    // Example data
+    const activeTasks = [
+      { id: 1, name: "Emily Martinez", address: "892 Richmond Ave, Buffalo, NY", description: "Transportation needed to medical appointment on Monday at 2PM.", status: "active", date: "Nov 8, 2025" }
+    ];
+    const taskHistory = [
+      { id: 2, name: "John Smith", address: "456 Main St, Buffalo, NY", description: "Grocery delivery completed.", status: "completed", date: "Nov 7, 2025" },
+      { id: 3, name: "Sarah Wilson", address: "789 Elm St, Buffalo, NY", description: "Snow removal from driveway.", status: "completed", date: "Nov 6, 2025" }
+    ];
 
-    // Create the gray label
-    const label = document.createElement("label");
-    label.className = "note-label";
-    label.textContent = "Describe your situation that you need assistance with";
+    function createTaskElement(task) {
+      const li = document.createElement('li');
+      li.className = 'task-item';
+      const statusClass = task.status === 'active' ? 'status-active' : 'status-completed';
+      const statusText = task.status === 'active' ? 'Active' : 'Completed';
+      li.innerHTML = `
+        <span class="task-status ${statusClass}">${statusText}</span>
+        <div class="task-details">
+          <h3>${task.name}</h3>
+          <p>${task.description}</p>
+          <p>${task.address}</p>
+        </div>
+        <span class="task-date">${task.date}</span>
+      `;
+      return li;
+    }
 
-    // Create textarea
-    const textarea = document.createElement("textarea");
-    textarea.placeholder = "Type your message here...";
-    textarea.id = "noteBox";
-
-    // Create button
-    const button = document.createElement("button");
-    button.textContent = "Submit";
-
-    // Add submit functionality
-    button.addEventListener("click", (e) => {
-      e.preventDefault();
-      const note = textarea.value.trim();
-      if (note) {
-        alert("Submitted note: " + note);
-        textarea.value = "";
-      } else {
-        alert("Please enter something before submitting.");
-      }
+    document.addEventListener('DOMContentLoaded', () => {
+      const activeList = document.getElementById('active-tasks');
+      const historyList = document.getElementById('task-history');
+      activeTasks.forEach(t => activeList.appendChild(createTaskElement(t)));
+      taskHistory.forEach(t => historyList.appendChild(createTaskElement(t)));
     });
 
-    // Append everything
-    container.appendChild(label);
-    container.appendChild(textarea);
-    container.appendChild(button);
-    document.getElementById("app").appendChild(container);
+    // Floating Button and Overlay
+    const overlay = document.getElementById('overlay');
+    const addBtn = document.getElementById('addRequestBtn');
+    const closeBtn = document.getElementById('closeOverlay');
+
+    addBtn.addEventListener('click', () => overlay.classList.add('active'));
+    closeBtn.addEventListener('click', () => overlay.classList.remove('active'));
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.classList.remove('active');
+    });
+
+    // Submit Button
+    document.getElementById('submitBtn').addEventListener('click', () => {
+      const priority = document.getElementById('priority').value;
+      const help = document.getElementById('helpDetails').value.trim();
+      const notes = document.getElementById('additionalNotes').value.trim();
+      const contact = document.getElementById('contactMethod').value.trim();
+
+      if (!help) {
+        alert("Please fill out the Help Request Details.");
+        return;
+      }
+
+      alert(
+        `Submitted:\nPriority: ${priority}\nHelp: ${help}\nNotes: ${notes}\nContact: ${contact}`
+      );
+
+      // Reset + Close
+      document.getElementById('helpDetails').value = '';
+      document.getElementById('additionalNotes').value = '';
+      document.getElementById('contactMethod').value = '';
+      document.getElementById('priority').value = 'High';
+      overlay.classList.remove('active');
+    });
   </script>
 </body>
 </html>

@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Sign Up</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<style>
+		* { box-sizing: border-box; }
+
+		body {
+			font-family: "Segoe UI", Roboto, Arial, sans-serif;
+			background: linear-gradient(145deg, #e5e7eb, #f9fafb);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			min-height: 100vh;
+			margin: 0;
+			color: #111827;
+		}
+
+		.container {
+			background-color: #ffffff;
+			padding: 2.5rem;
+			border-radius: 12px;
+			box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+			width: 100%;
+			max-width: 420px;
+			text-align: center;
+		}
+
+		h2 {
+			font-size: 1.6rem;
+			font-weight: 600;
+			margin-bottom: 0.5rem;
+			color: #1e293b;
+		}
+
+		form {
+			display: flex;
+			flex-direction: column;
+			gap: 0.75rem;
+			margin-top: 0.5rem;
+		}
+
+		input[type="text"], input[type="email"], input[type="search"] {
+			padding: 0.85rem 0.9rem;
+			border: 1px solid #cbd5e1;
+			border-radius: 8px;
+			font-size: 1rem;
+			background: #f8fafc; /* subtle input background to improve contrast */
+			color: #0f172a;
+			min-height: 44px;
+			outline: none;
+			transition: box-shadow 0.12s ease, border-color 0.12s ease;
+		}
+
+		input::placeholder { color: #94a3b8; }
+
+		input:focus {
+			border-color: #2563eb;
+			box-shadow: 0 6px 14px rgba(37,99,235,0.08);
+		}
+
+		.role-row {
+			display: flex;
+			gap: 0.75rem;
+			justify-content: center;
+			margin-top: 0.25rem;
+		}
+
+		.role-box {
+			flex: 1;
+			padding: 0.75rem;
+			border: 1px solid #e5e7eb;
+			border-radius: 10px;
+			cursor: pointer;
+			user-select: none;
+			background: #ffffff;
+			transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.07s ease;
+		}
+
+		.role-box.selected {
+			border-color: #2563eb;
+			box-shadow: 0 6px 18px rgba(37,99,235,0.12);
+			transform: translateY(-2px);
+		}
+
+		button {
+			width: 100%;
+			padding: 0.85rem;
+			border: none;
+			border-radius: 8px;
+			background-color: #2563eb;
+			color: #ffffff;
+			font-size: 1rem;
+			cursor: pointer;
+			transition: background-color 0.25s ease, transform 0.1s ease;
+			margin-top: 0.25rem;
+		}
+
+		button:hover { background-color: #1d4ed8; }
+		button:active { transform: scale(0.99); }
+
+		#status {
+			color: #4b5563;
+			font-size: 0.95rem;
+			margin-top: 0.75rem;
+			min-height: 1.1rem;
+		}
+
+		.muted { color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem; }
+
+		footer {
+			position: absolute;
+			bottom: 15px;
+			color: #6b7280;
+			font-size: 0.85rem;
+			text-align: center;
+			width: 100%;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h2>Create your account</h2>
+		<p class="muted">Already have an account? <a href="/index.html" style="color:#2563eb;">Sign in</a></p>
+
+		<form id="signupForm">
+			<input type="text" id="name" placeholder="Full Name (e.g. Jane Doe)" required />
+
+			<input type="email" id="email" placeholder="Email (you@example.com)" required />
+
+			<div class="role-row" role="radiogroup" aria-label="User type">
+				<div class="role-box" id="roleVolunteer" data-role="volunteer">Volunteer</div>
+				<div class="role-box" id="roleRequestor" data-role="requestor">Requestor</div>
+			</div>
+
+			<input type="text" id="address" placeholder="Address (Street, City, State)" required />
+
+			<button id="sendCodeBtn" type="submit">Send confirmation</button>
+		</form>
+
+		<div id="codeSection" style="display:none; margin-top:0.75rem;">
+			<input type="text" id="codeInput" placeholder="Enter 6-digit code" maxlength="6" />
+			<button id="verifyBtn" type="button">Verify code</button>
+		</div>
+
+		<div id="status"></div>
+	</div>
+
+	<footer>
+		© 2025 UB Hackaton, All Rights Reserved.
+	</footer>
+
+	<script>
+		// Simple client-side signup + confirmation flow (mock)
+		const signupForm = document.getElementById('signupForm');
+		const roleVolunteer = document.getElementById('roleVolunteer');
+		const roleRequestor = document.getElementById('roleRequestor');
+		const status = document.getElementById('status');
+		const codeSection = document.getElementById('codeSection');
+		const codeInput = document.getElementById('codeInput');
+		const verifyBtn = document.getElementById('verifyBtn');
+
+		let selectedRole = null;
+		let currentCode = null;
+		let signupData = null;
+
+		function clearSelection() {
+			roleVolunteer.classList.remove('selected');
+			roleRequestor.classList.remove('selected');
+		}
+
+		roleVolunteer.addEventListener('click', () => {
+			clearSelection();
+			roleVolunteer.classList.add('selected');
+			selectedRole = roleVolunteer.getAttribute('data-role');
+		});
+
+		roleRequestor.addEventListener('click', () => {
+			clearSelection();
+			roleRequestor.classList.add('selected');
+			selectedRole = roleRequestor.getAttribute('data-role');
+		});
+
+		function generateCode() {
+			return Math.floor(100000 + Math.random() * 900000).toString();
+		}
+
+		signupForm.addEventListener('submit', (e) => {
+			e.preventDefault();
+
+			const name = document.getElementById('name').value.trim();
+			const email = document.getElementById('email').value.trim();
+			const address = document.getElementById('address').value.trim();
+
+			if (!name || !email) {
+				status.textContent = 'Please enter your name and email.';
+				status.style.color = '#dc2626';
+				return;
+			}
+
+			if (!selectedRole) {
+				status.textContent = 'Please select a user type.';
+				status.style.color = '#dc2626';
+				return;
+			}
+
+			// Save data locally (in a real app, you'd POST to the backend)
+			signupData = { name, email, address, role: selectedRole };
+
+			currentCode = generateCode();
+
+			// Show UX: code sent
+			status.textContent = 'Confirmation code sent to your email. (Check console in this mock)';
+			status.style.color = '#16a34a';
+
+			// For demo purposes we print the code to the console so you can complete verification
+			// In a real app the code would be emailed
+			console.info('Mock confirmation code for', email, ':', currentCode);
+
+			// Hide form and show code input
+			signupForm.style.display = 'none';
+			codeSection.style.display = 'flex';
+			codeSection.style.flexDirection = 'column';
+			codeSection.style.gap = '0.6rem';
+		});
+
+		verifyBtn.addEventListener('click', () => {
+			const entered = codeInput.value.trim();
+			if (!entered || entered.length !== 6) {
+				status.textContent = 'Enter the 6-digit code.';
+				status.style.color = '#dc2626';
+				return;
+			}
+
+			if (entered === currentCode) {
+				status.textContent = `Email confirmed. Welcome, ${signupData.name}!`;
+				status.style.color = '#16a34a';
+
+				// You may want to persist the user by calling backend here. For now we store in localStorage
+				localStorage.setItem('signedUpUser', JSON.stringify(signupData));
+
+				// Replace codeSection with confirmed message
+				codeSection.style.display = 'none';
+				const confirmed = document.createElement('div');
+				confirmed.style.marginTop = '0.75rem';
+				confirmed.textContent = 'Your email is confirmed — you can now sign in.';
+				confirmed.style.color = '#065f46';
+				document.querySelector('.container').appendChild(confirmed);
+			} else {
+				status.textContent = 'Incorrect code. Please try again.';
+				status.style.color = '#dc2626';
+			}
+		});
+	</script>
+</body>
+</html>

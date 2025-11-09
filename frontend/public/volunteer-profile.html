@@ -21,7 +21,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .top-banner h1 {
@@ -41,7 +41,7 @@
     }
 
     .map-link:hover {
-      background-color: rgba(255,255,255,0.1);
+      background-color: rgba(255, 255, 255, 0.1);
     }
 
     .main-content {
@@ -54,7 +54,7 @@
     .task-section {
       background: white;
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       margin-bottom: 2rem;
       overflow: hidden;
     }
@@ -141,7 +141,7 @@
 
     <!-- Task History Section -->
     <div class="task-section">
-      <h2>Task History</h2>
+      <h2>Tasks History</h2>
       <ul class="task-list" id="task-history">
         <!-- Tasks will be dynamically added here -->
       </ul>
@@ -184,12 +184,12 @@
     ];
 
     function createTaskElement(task) {
-      const li = document.createElement('li');
-      li.className = 'task-item';
-      
-      const statusClass = task.status === 'active' ? 'status-active' : 'status-completed';
-      const statusText = task.status === 'active' ? 'Active' : 'Completed';
-      
+      const li = document.createElement("li");
+      li.className = "task-item";
+
+      const statusClass = task.status === "active" ? "status-active" : "status-completed";
+      const statusText = task.status === "active" ? "Active" : "Completed";
+
       li.innerHTML = `
         <span class="task-status ${statusClass}">${statusText}</span>
         <div class="task-details">
@@ -199,14 +199,14 @@
         </div>
         <span class="task-date">${task.date}</span>
       `;
-      
+
       return li;
     }
 
     // Populate tasks
-    document.addEventListener('DOMContentLoaded', () => {
-      const activeTasksList = document.getElementById('active-tasks');
-      const taskHistoryList = document.getElementById('task-history');
+    document.addEventListener("DOMContentLoaded", () => {
+      const activeTasksList = document.getElementById("active-tasks");
+      const taskHistoryList = document.getElementById("task-history");
 
       activeTasks.forEach(task => {
         activeTasksList.appendChild(createTaskElement(task));
@@ -215,7 +215,7 @@
       taskHistory.forEach(task => {
         taskHistoryList.appendChild(createTaskElement(task));
       });
-    }); 
+    });
   </script>
 </body>
 </html>
