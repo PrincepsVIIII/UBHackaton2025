@@ -37,7 +37,7 @@ class Settings(BaseSettings):
         description="Validity window for email one-time passcodes.",
     )
     max_open_requests_per_elder: int = Field(
-        1,
+        default_factory=lambda: 999_999,
         ge=1,
         env="MAX_OPEN_REQUESTS_PER_ELDER",
         description="Maximum number of concurrently open/assigned requests per elder.",
