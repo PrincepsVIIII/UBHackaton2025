@@ -100,6 +100,9 @@
       overflow: hidden;
       gap: 1px;
       background: #ddd;
+      position: relative; /* needed so sidebars can overlay the map */
+      height: 100%;
+      align-items: stretch;
     }
 
     @media (min-width: 768px) {
@@ -120,6 +123,11 @@
       padding: var(--space);
       overflow-y: auto;
       max-height: 30vh;
+    }
+
+    /* Ensure children can shrink inside grid containers on Firefox/Chrome */
+    .main-content > * {
+      min-height: 0;
     }
 
     @media (min-width: 768px) {
@@ -151,13 +159,23 @@
       border-left: 4px solid #007bff;
     }
 
-    /* Map height scales with viewport but has sensible min/max bounds
-       so it grows on large monitors without stretching other elements. */
+    /* Map height scales with viewport but on wide screens it should fill
+       the available column/row so the sidebars can overlay it. */
     #map {
       width: 100%;
       height: clamp(300px, 50vh, 900px);
       min-height: 300px;
       background: var(--muted);
+      z-index: 1;
+      display: block;
+    }
+
+    @media (min-width: 768px) {
+      /* On desktop let the map stretch to fill the grid row/column. */
+      #map {
+        height: 100%;
+        min-height: 0;
+      }
     }
 
     @media (min-width: 1200px) {
@@ -183,10 +201,20 @@
     }
 
     @media (min-width: 768px) {
+      /* On desktop make the right sidebar overlay the map instead of
+         pushing it; this lets the map occupy full space and the
+         sidebar slide over it when opened. */
       #right-sidebar {
         max-height: none;
         transform: translateX(100%);
         border-left: 1px solid #ddd;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: minmax(clamp(220px, 16vw, 380px), 30%);
+        z-index: 30;
+        box-shadow: -6px 0 18px rgba(0,0,0,0.08);
       }
     }
 
@@ -446,6 +474,12 @@
 
       // Initialize
       populateRequestList();
+      // Ensure Leaflet knows the correct container size after initial layout
+      // (small timeout lets CSS settle). This prevents partial rendering
+      // where the map doesn't fill its area.
+      setTimeout(() => {
+        try { map.invalidateSize(); } catch (e) { /* ignore if map not ready */ }
+      }, 150);
     });
   </script>
 </body>
