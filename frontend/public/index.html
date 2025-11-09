@@ -2,37 +2,75 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Login</title>
+  <title>Buffalo to the rescue</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: "Segoe UI", Roboto, Arial, sans-serif;
-      background: linear-gradient(145deg, #e5e7eb, #f9fafb);
+      font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+      min-height: 100vh;
+      background: #f3f4f6;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      margin: 0;
-      color: #111827;
+      overflow: hidden;
+    }
+
+    /* Background geometric shapes */
+    .bg-shape {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: #2563eb;
+      clip-path: polygon(0 0, 100% 0, 80% 100%, 0% 100%);
+      opacity: 0.15;
+      top: -100px;
+      left: -100px;
+      transform: rotate(20deg);
+    }
+
+    .bg-shape2 {
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: #1d4ed8;
+      clip-path: polygon(20% 0%, 100% 0%, 100% 80%, 0 100%);
+      opacity: 0.1;
+      bottom: -150px;
+      right: -150px;
+      transform: rotate(-15deg);
     }
 
     .container {
-      background-color: #ffffff;
-      padding: 2.5rem;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      position: relative;
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 3rem 2.5rem;
       width: 100%;
-      max-width: 380px;
+      max-width: 400px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
       text-align: center;
+      z-index: 1;
     }
 
     h2 {
-      font-size: 1.6rem;
-      font-weight: 600;
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      color: #6b7280;
+      font-size: 0.95rem;
       margin-bottom: 1.5rem;
-      color: #1e293b;
+    }
+
+    a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 500;
     }
 
     form {
@@ -42,37 +80,55 @@
     }
 
     input {
-      padding: 0.75rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      border-radius: 12px;
+      border: 1px solid #d1d5db;
       font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    input:focus {
+      border-color: #2563eb;
     }
 
     button {
-      width: 100%;
       padding: 0.85rem;
+      border-radius: 12px;
       border: none;
-      border-radius: 8px;
       background-color: #2563eb;
       color: #ffffff;
+      font-weight: 500;
       font-size: 1rem;
       cursor: pointer;
       transition: background-color 0.25s ease, transform 0.1s ease;
     }
 
-    button:hover { background-color: #1d4ed8; }
-    button:active { transform: scale(0.98); }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
 
     #status {
       color: #4b5563;
       font-size: 0.95rem;
       margin-top: 1rem;
+      min-height: 1.2rem;
+    }
+
+    #codeSection {
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
     }
 
     footer {
       position: absolute;
       bottom: 15px;
-      color: #6b7280;
+      color: #9ca3af;
       font-size: 0.85rem;
       text-align: center;
       width: 100%;
@@ -80,17 +136,23 @@
   </style>
 </head>
 <body>
+  <div class="bg-shape"></div>
+  <div class="bg-shape2"></div>
+
   <div class="container">
     <h2>Secure Sign-In</h2>
-    <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">New user? <a href="/signup.html" style="color: #2563eb;">Sign up here</a></p>
+    <p>New user? <a href="/signup.html">Sign up here</a></p>
+
     <form id="loginForm">
       <input type="email" id="email" placeholder="Email (.edu required)" required />
       <button type="submit" id="requestBtn">Request Code</button>
     </form>
-    <div id="codeSection" style="display: none;">
+
+    <div id="codeSection">
       <input type="text" id="code" placeholder="Enter 6-digit code" maxlength="6" pattern="\d{6}" required />
       <button type="button" id="verifyBtn">Verify Code</button>
     </div>
+
     <div id="status">Not signed in</div>
   </div>
 
@@ -114,32 +176,25 @@
       status.style.color = '#4b5563';
 
       try {
-        // Try volunteer role first (most common for login)
-        console.log(`Requesting code for ${email}...`);
         const res = await fetch(`${API_BASE}/auth/request-code`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, role: 'volunteer' })
         });
 
-        console.log(`Response status: ${res.status}`);
-        
         if (res.ok) {
           status.textContent = 'Code sent! Check backend console for OTP.';
           status.style.color = '#16a34a';
           form.style.display = 'none';
           codeSection.style.display = 'flex';
-          codeSection.style.flexDirection = 'column';
-          codeSection.style.gap = '1rem';
         } else {
           const errorData = await res.json();
-          console.error('Error:', errorData);
           status.textContent = errorData.detail || 'Failed to send code';
           status.style.color = '#dc2626';
         }
       } catch (err) {
-        console.error('Network error:', err);
-        status.textContent = 'Network error. Check console for details.';
+        console.error(err);
+        status.textContent = 'Network error. Check console.';
         status.style.color = '#dc2626';
       }
     });
@@ -168,8 +223,7 @@
         localStorage.setItem('user', JSON.stringify(data.user));
         status.textContent = `Signed in as: ${data.user.email}`;
         status.style.color = '#16a34a';
-        
-        // Redirect based on role
+
         setTimeout(() => {
           if (data.user.role === 'volunteer') {
             window.location.replace('/volunteer-view.html');

@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Volunteer Profile</title>
-
+  <title>Buffalo to the rescue</title>
   <style>
     body {
       margin: 0;
@@ -12,10 +11,9 @@
       min-height: 100vh;
       display: grid;
       grid-template-rows: auto 1fr;
-      background-color: #f3f4f6;
     }
 
-    /* --- Top Banner --- */
+    /* --- TOP BAR --- */
     .top-banner {
       background: #007bff;
       color: white;
@@ -32,11 +30,8 @@
     }
 
     .map-link {
-      display: flex;
-      align-items: center;
       color: white;
       text-decoration: none;
-      gap: 0.5rem;
       padding: 0.5rem;
       border-radius: 4px;
       transition: background-color 0.2s;
@@ -46,7 +41,7 @@
       background-color: rgba(255,255,255,0.1);
     }
 
-    /* --- Main Content --- */
+    /* --- MAIN CONTENT --- */
     .main-content {
       padding: 2rem;
       max-width: 1200px;
@@ -95,96 +90,59 @@
       font-weight: 500;
     }
 
-    .status-active {
-      background: #e3f2fd;
-      color: #0d47a1;
-    }
+    .status-active { background: #e3f2fd; color: #0d47a1; }
+    .status-completed { background: #e8f5e9; color: #1b5e20; }
 
-    .status-completed {
-      background: #e8f5e9;
-      color: #1b5e20;
-    }
+    .task-details h3 { margin: 0 0 0.25rem 0; font-size: 1rem; }
+    .task-details p { margin: 0; color: #666; font-size: 0.875rem; }
+    .task-date { color: #666; font-size: 0.875rem; }
 
-    .task-details h3 {
-      margin: 0 0 0.25rem 0;
-      font-size: 1rem;
-    }
-
-    .task-details p {
-      margin: 0;
-      color: #666;
-      font-size: 0.875rem;
-    }
-
-    .task-date {
-      color: #666;
-      font-size: 0.875rem;
-    }
-
-    /* --- Floating Plus Button --- */
-    .fab {
+    /* --- FLOATING + BUTTON --- */
+    .add-btn {
       position: fixed;
-      bottom: 30px;
-      right: 30px;
+      bottom: 24px;
+      right: 24px;
+      background: #007bff;
+      color: white;
+      border: none;
       width: 60px;
       height: 60px;
       border-radius: 50%;
-      background-color: #2563eb;
-      color: white;
       font-size: 2rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      line-height: 0;
       cursor: pointer;
-      transition: background-color 0.3s ease;
-      z-index: 1000;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: background 0.2s ease, transform 0.2s ease;
     }
 
-    .fab:hover {
-      background-color: #1d4ed8;
+    .add-btn:hover {
+      background: #0056b3;
+      transform: scale(1.05);
     }
 
-    /* --- Overlay Popup --- */
+    /* --- MODAL OVERLAY --- */
     .overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.4);
+      background: rgba(0, 0, 0, 0.5);
       display: none;
       justify-content: center;
       align-items: center;
-      z-index: 999;
+      z-index: 100;
     }
 
     .overlay.active {
       display: flex;
     }
 
-    .form-container {
-      background-color: white;
+    .container {
+      background: white;
       padding: 2rem;
       border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       max-width: 500px;
       width: 90%;
       position: relative;
-      animation: fadeIn 0.2s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 14px;
-      background: none;
-      border: none;
-      font-size: 1.5rem;
-      cursor: pointer;
-      color: #555;
     }
 
     .note-label {
@@ -230,16 +188,27 @@
     button.submit-btn:hover {
       background-color: #1d4ed8;
     }
+
+    .close-btn {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      background: transparent;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #888;
+    }
+
+    .close-btn:hover {
+      color: #333;
+    }
   </style>
 </head>
-
 <body>
   <!-- Top Banner -->
   <div class="top-banner">
     <h1>My Tasks</h1>
-    <a href="volunteer-view.html" class="map-link">
-      <span>Back to Map</span>
-    </a>
   </div>
 
   <!-- Main Content -->
@@ -255,13 +224,13 @@
     </div>
   </div>
 
-  <!-- Floating Action Button -->
-  <div class="fab" id="addRequestBtn">+</div>
+  <!-- Floating + Button -->
+  <button class="add-btn" id="openForm">+</button>
 
-  <!-- Overlay Form -->
-  <div class="overlay" id="overlay">
-    <div class="form-container">
-      <button class="close-btn" id="closeOverlay">&times;</button>
+  <!-- Overlay (Form Modal) -->
+  <div class="overlay" id="formOverlay">
+    <div class="container">
+      <button class="close-btn" id="closeForm">&times;</button>
 
       <label class="note-label">Priority</label>
       <select id="priority">
@@ -270,27 +239,46 @@
         <option>Low</option>
       </select>
 
-      <label class="note-label">Help Request Details</label>
+      <!-- NEW: Estimate Time -->
+      <label class="note-label">Estimate Time (minutes)</label>
+      <select id="estimateTime">
+        <option value="30">30</option>
+        <option value="60">60</option>
+        <option value="90">90</option>
+        <option value="120">120</option>
+      </select>
+
+      <label class="note-label">Request Details</label>
       <textarea id="helpDetails" placeholder="Describe what you need help with..."></textarea>
 
       <label class="note-label">Additional Notes</label>
       <textarea id="additionalNotes" placeholder="Any extra information..."></textarea>
 
-      <label class="note-label">Preferred Contact Method</label>
-      <input id="contactMethod" type="text" placeholder="e.g. Email, Phone, Discord..." />
-
-      <button class="submit-btn" id="submitBtn">Submit</button>
+      <button class="submit-btn" id="submitForm">Submit</button>
     </div>
   </div>
 
   <script>
-    // Example data
+    // Example tasks
     const activeTasks = [
-      { id: 1, name: "Emily Martinez", address: "892 Richmond Ave, Buffalo, NY", description: "Transportation needed to medical appointment on Monday at 2PM.", status: "active", date: "Nov 8, 2025" }
+      {
+        id: 1,
+        name: "Jay Shoemaker",
+        address: "892 Richmond Ave, Buffalo, NY",
+        description: "Need help picking up cough drops at around 2PM",
+        status: "active",
+        date: "Nov 8, 2025"
+      }
     ];
     const taskHistory = [
-      { id: 2, name: "John Smith", address: "456 Main St, Buffalo, NY", description: "Grocery delivery completed.", status: "completed", date: "Nov 7, 2025" },
-      { id: 3, name: "Sarah Wilson", address: "789 Elm St, Buffalo, NY", description: "Snow removal from driveway.", status: "completed", date: "Nov 6, 2025" }
+      {
+        id: 2,
+        name: "John Smith",
+        address: "456 Main St, Buffalo, NY",
+        description: "Grocery delivery completed.",
+        status: "completed",
+        date: "Nov 7, 2025"
+      }
     ];
 
     function createTaskElement(task) {
@@ -315,41 +303,32 @@
       const historyList = document.getElementById('task-history');
       activeTasks.forEach(t => activeList.appendChild(createTaskElement(t)));
       taskHistory.forEach(t => historyList.appendChild(createTaskElement(t)));
-    });
 
-    // Floating Button and Overlay
-    const overlay = document.getElementById('overlay');
-    const addBtn = document.getElementById('addRequestBtn');
-    const closeBtn = document.getElementById('closeOverlay');
+      // Modal behavior
+      const overlay = document.getElementById('formOverlay');
+      document.getElementById('openForm').addEventListener('click', () => {
+        overlay.classList.add('active');
+      });
+      document.getElementById('closeForm').addEventListener('click', () => {
+        overlay.classList.remove('active');
+      });
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) overlay.classList.remove('active');
+      });
 
-    addBtn.addEventListener('click', () => overlay.classList.add('active'));
-    closeBtn.addEventListener('click', () => overlay.classList.remove('active'));
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) overlay.classList.remove('active');
-    });
-
-    // Submit Button
-    document.getElementById('submitBtn').addEventListener('click', () => {
-      const priority = document.getElementById('priority').value;
-      const help = document.getElementById('helpDetails').value.trim();
-      const notes = document.getElementById('additionalNotes').value.trim();
-      const contact = document.getElementById('contactMethod').value.trim();
-
-      if (!help) {
-        alert("Please fill out the Help Request Details.");
-        return;
-      }
-
-      alert(
-        `Submitted:\nPriority: ${priority}\nHelp: ${help}\nNotes: ${notes}\nContact: ${contact}`
-      );
-
-      // Reset + Close
-      document.getElementById('helpDetails').value = '';
-      document.getElementById('additionalNotes').value = '';
-      document.getElementById('contactMethod').value = '';
-      document.getElementById('priority').value = 'High';
-      overlay.classList.remove('active');
+      // Form submission
+      document.getElementById('submitForm').addEventListener('click', e => {
+        e.preventDefault();
+        const data = {
+          priority: document.getElementById('priority').value,
+          estimateTime: document.getElementById('estimateTime').value,
+          help: document.getElementById('helpDetails').value.trim(),
+          notes: document.getElementById('additionalNotes').value.trim(),
+        };
+        if (!data.help) return alert("Please fill out the request details before submitting.");
+        alert(`Submitted:\nPriority: ${data.priority}\nEstimate Time: ${data.estimateTime} minutes\nHelp: ${data.help}\nNotes: ${data.notes}`);
+        overlay.classList.remove('active');
+      });
     });
   </script>
 </body>
