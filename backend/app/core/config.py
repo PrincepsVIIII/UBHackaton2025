@@ -20,7 +20,7 @@ load_dotenv(override=False)
 
 class Settings(BaseSettings):
     app_name: str = Field("Buffalo Winter Elder Help Routing", env="APP_NAME")
-    app_base_url: HttpUrl = Field(..., env="APP_BASE_URL")
+    app_base_url: HttpUrl = Field("http://localhost:8000", env="APP_BASE_URL")
     secret_key: str = Field(
         "change-this-secret-key",
         env="SECRET_KEY",
