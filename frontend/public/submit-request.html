@@ -332,8 +332,9 @@
           approveButton.addEventListener('click', () =>
             approveCompletion(request.id, approveButton)
           );
-          approveButton.disabled = request.status === 'completed';
-          details.appendChild(approveButton);
+          if (request.status !== 'completed') {
+            details.appendChild(approveButton);
+          }
         }
       }
 
