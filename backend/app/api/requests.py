@@ -59,8 +59,10 @@ def _help_request_to_schema(help_request: HelpRequest) -> HelpRequestResponse:
     elder_display_name = None
     if elder is not None:
         if elder.elder_profile and elder.elder_profile.preferred_contact_method:
-            elder_display_name = elder.elder_profile.preferred_contact_method
-        else:
+            alias = elder.elder_profile.preferred_contact_method.strip()
+            if alias and alias.lower() not in {"email", "phone", "call", "text", "sms"}:
+                elder_display_name = alias
+        if elder_display_name is None:
             elder_display_name = elder.email
     return HelpRequestResponse(
         id=help_request.id,
@@ -90,8 +92,10 @@ def _help_request_list_item(help_request: HelpRequest) -> HelpRequestListItem:
     elder_display_name = None
     if elder is not None:
         if elder.elder_profile and elder.elder_profile.preferred_contact_method:
-            elder_display_name = elder.elder_profile.preferred_contact_method
-        else:
+            alias = elder.elder_profile.preferred_contact_method.strip()
+            if alias and alias.lower() not in {"email", "phone", "call", "text", "sms"}:
+                elder_display_name = alias
+        if elder_display_name is None:
             elder_display_name = elder.email
     return HelpRequestListItem(
         id=help_request.id,
