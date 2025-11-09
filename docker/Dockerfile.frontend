@@ -31,5 +31,5 @@ EXPOSE 3000
 
 # NOTE: Update VITE_API_BASE_URL (see frontend/.env example) when deploying to cloud.
 
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["serve", "dist", "-l", "3000"]
 
