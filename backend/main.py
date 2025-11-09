@@ -1,30 +1,31 @@
-"""
-FastAPI application entry-point.
+from fastapi import FastAPI, Form
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+import sqlite3, bcrypt
 
-Run with:
-    uvicorn main:app --reload
-"""
+app = FastAPI()
 
-from fastapi import FastAPI
+# Mount your static folder (for the HTML page)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-from app.api.routes import api_router
-from app.core.config import settings
+def verify_user(username: str, password: str):
+    conn = sqlite3.connect("app.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT password_hash FROM users WHERE username=?", (username,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        stored_hash = row[0]
+        return bcrypt.checkpw(password.encode("utf-8"), stored_hash)
+    return False
 
-app = FastAPI(
-    title=settings.app_name,
-    version="0.1.0",
-    description="Buffalo Winter Elder Help Routing API - Phase 1 scaffold.",
-)
+@app.post("/login")
+async def login(username: str = Form(...), password: str = Form(...)):
+    if verify_user(username, password):
+        return JSONResponse(content={"username": username, "message": "Login successful"})
+    return JSONResponse(status_code=401, content={"message": "Invalid username or password"})
 
-
-@app.get("/", tags=["health"])
-async def root() -> dict[str, str]:
-    """
-    Simple health endpoint confirming the service is running.
-    """
-
-    return {"status": "ok", "message": "Buffalo Winter Elder Help Routing API"}
-
-
-app.include_router(api_router)
-
+@app.get("/")
+def serve_home():
+    with open("static/index.html") as f:
+        return HTMLResponse(f.read())

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Volunteer Profile</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, Arial, sans-serif;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .top-banner {
+      background: #007bff;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .top-banner h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    .map-link {
+      display: flex;
+      align-items: center;
+      color: white;
+      text-decoration: none;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+
+    .map-link:hover {
+      background-color: rgba(255,255,255,0.1);
+    }
+
+    .main-content {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .task-section {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+
+    .task-section h2 {
+      margin: 0;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .task-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .task-item {
+      padding: 1rem;
+      border-bottom: 1px solid #dee2e6;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .task-item:last-child {
+      border-bottom: none;
+    }
+
+    .task-status {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .status-active {
+      background: #e3f2fd;
+      color: #0d47a1;
+    }
+
+    .status-completed {
+      background: #e8f5e9;
+      color: #1b5e20;
+    }
+
+    .task-details h3 {
+      margin: 0 0 0.25rem 0;
+      font-size: 1rem;
+    }
+
+    .task-details p {
+      margin: 0;
+      color: #666;
+      font-size: 0.875rem;
+    }
+
+    .task-date {
+      color: #666;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Top Banner -->
+  <div class="top-banner">
+    <h1>My Tasks</h1>
+    <a href="volunteer-view.html" class="map-link">
+      <span>Back to Map</span>
+    </a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Active Tasks Section -->
+    <div class="task-section">
+      <h2>Active Tasks</h2>
+      <ul class="task-list" id="active-tasks">
+        <!-- Tasks will be dynamically added here -->
+      </ul>
+    </div>
+
+    <!-- Task History Section -->
+    <div class="task-section">
+      <h2>Task History</h2>
+      <ul class="task-list" id="task-history">
+        <!-- Tasks will be dynamically added here -->
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Example tasks data (replace with backend fetch)
+    const activeTasks = [
+      {
+        id: 1,
+        name: "Emily Martinez",
+        address: "892 Richmond Ave, Buffalo, NY",
+        description: "Transportation needed to medical appointment on Monday at 2PM.",
+        status: "active",
+        date: "Nov 8, 2025",
+        urgency: "High"
+      }
+    ];
+
+    const taskHistory = [
+      {
+        id: 2,
+        name: "John Smith",
+        address: "456 Main St, Buffalo, NY",
+        description: "Grocery delivery completed.",
+        status: "completed",
+        date: "Nov 7, 2025",
+        urgency: "Medium"
+      },
+      {
+        id: 3,
+        name: "Sarah Wilson",
+        address: "789 Elm St, Buffalo, NY",
+        description: "Snow removal from driveway.",
+        status: "completed",
+        date: "Nov 6, 2025",
+        urgency: "Low"
+      }
+    ];
+
+    function createTaskElement(task) {
+      const li = document.createElement('li');
+      li.className = 'task-item';
+      
+      const statusClass = task.status === 'active' ? 'status-active' : 'status-completed';
+      const statusText = task.status === 'active' ? 'Active' : 'Completed';
+      
+      li.innerHTML = `
+        <span class="task-status ${statusClass}">${statusText}</span>
+        <div class="task-details">
+          <h3>${task.name}</h3>
+          <p>${task.description}</p>
+          <p>${task.address}</p>
+        </div>
+        <span class="task-date">${task.date}</span>
+      `;
+      
+      return li;
+    }
+
+    // Populate tasks
+    document.addEventListener('DOMContentLoaded', () => {
+      const activeTasksList = document.getElementById('active-tasks');
+      const taskHistoryList = document.getElementById('task-history');
+
+      activeTasks.forEach(task => {
+        activeTasksList.appendChild(createTaskElement(task));
+      });
+
+      taskHistory.forEach(task => {
+        taskHistoryList.appendChild(createTaskElement(task));
+      });
+    });
+  </script>
+</body>
+</html>
