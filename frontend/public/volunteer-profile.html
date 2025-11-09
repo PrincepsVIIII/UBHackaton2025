@@ -347,9 +347,8 @@
           }
 
           alert('Request marked as completion pending approval.');
-          await fetchAssignments();
-          const historyListEl = document.getElementById('task-history');
-          loadAssignments('history', historyListEl, 'No completed assignments yet.');
+          await loadAssignments('active', activeList, 'No active assignments yet.');
+          await loadAssignments('history', historyList, 'No completed assignments yet.');
         } catch (error) {
           console.error('Error marking request completed:', error);
           alert(error.message || 'Network error while marking request completed.');
