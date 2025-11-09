@@ -31,5 +31,6 @@ EXPOSE 8000
 
 # NOTE: Update SECRET_KEY / APP_BASE_URL in ../.env before building for non-local deployments.
 
-CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Initialize database and start server
+CMD python -m app.db.init_db && python -m uvicorn main:app --host 0.0.0.0 --port 8000
 
