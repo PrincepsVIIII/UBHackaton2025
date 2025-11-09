@@ -33,7 +33,7 @@ async def root() -> dict[str, str]:
     Simple health endpoint confirming the service is running.
     """
 
-    return {"status": "ok", "message": "Buffalo Winter Elder Help Routing API"}
+    return {"status": "ok", "message": "Buffalo to the resuscue API is running."}
 
 
 app.include_router(api_router)

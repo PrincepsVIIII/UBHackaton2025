@@ -11,37 +11,58 @@
 
   <!-- Custom CSS -->
   <style>
-    body {
+    :root {
+      --space: clamp(0.5rem, 1.5vw, 1rem);
+      --container-max: 1400px;
+      --banner-padding-inline: clamp(1rem, 3vw, 2.5rem);
+      --banner-padding-block: clamp(0.5rem, 1.5vw, 1rem);
+      --muted: #f8f9fa;
+    }
+
+    html, body {
       margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
       font-family: system-ui, Arial, sans-serif;
-      height: 100vh;
       display: grid;
       grid-template-rows: auto 1fr;
       grid-template-columns: 1fr;
+      min-height: 0; /* Needed for Firefox */
     }
 
     .top-banner {
       background: #007bff;
       color: white;
-      padding: 0.75rem 1.5rem;
-      display: flex;
-      justify-content: space-between;
+      padding: var(--banner-padding-block) var(--banner-padding-inline);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: relative;
+      z-index: 1000;
     }
 
     .top-banner h1 {
       margin: 0;
-      font-size: 1.5rem;
+      font-size: clamp(1.25rem, 3vw, 1.5rem);
+      text-align: center;
+      grid-column: 2;
     }
 
     .profile-link {
+      grid-column: 3;
+      justify-self: end;
       display: flex;
       align-items: center;
       color: white;
       text-decoration: none;
       gap: 0.5rem;
-      padding: 0.5rem;
+      padding: calc(var(--space) / 2);
       border-radius: 4px;
       transition: background-color 0.2s;
     }
@@ -66,21 +87,46 @@
       fill: #007bff;
     }
 
+    /* Center the main content in a responsive container so very large
+       monitors don't cause elements to stretch awkwardly. The container
+       will scale up to --container-max and remain centered. */
     .main-content {
       display: grid;
-      grid-template-columns: 300px 1fr 0;
-      transition: grid-template-columns 0.3s ease-in-out;
+      grid-template-rows: auto 1fr auto;
+      grid-template-columns: 100%;
+      min-height: 0; /* Needed for Firefox */
+      width: min(var(--container-max), 98%);
+      margin: 0 auto;
+      overflow: hidden;
+      gap: 1px;
+      background: #ddd;
     }
 
-    .main-content.details-visible {
-      grid-template-columns: 300px 1fr 300px;
+    @media (min-width: 768px) {
+      .main-content {
+        grid-template-rows: 1fr;
+        /* Sidebars scale with viewport using clamp() + minmax so they
+           remain usable on very large screens but don't become huge. */
+        grid-template-columns: minmax(clamp(200px, 14vw, 360px), 30%) 1fr 0;
+      }
+
+      .main-content.details-visible {
+        grid-template-columns: minmax(clamp(200px, 14vw, 360px), 30%) 1fr minmax(clamp(200px, 14vw, 360px), 30%);
+      }
     }
 
     #left-sidebar {
-      background: #f8f9fa;
-      border-right: 2px solid #ddd;
-      padding: 1rem;
+      background: var(--muted);
+      padding: var(--space);
       overflow-y: auto;
+      max-height: 30vh;
+    }
+
+    @media (min-width: 768px) {
+      #left-sidebar {
+        max-height: none;
+        border-right: 1px solid #ddd;
+      }
     }
 
     .request-list {
@@ -90,7 +136,7 @@
     }
 
     .request-item {
-      padding: 1rem;
+      padding: calc(var(--space) * 0.9);
       border-bottom: 1px solid #ddd;
       cursor: pointer;
       transition: background-color 0.2s;
@@ -105,21 +151,48 @@
       border-left: 4px solid #007bff;
     }
 
+    /* Map height scales with viewport but has sensible min/max bounds
+       so it grows on large monitors without stretching other elements. */
     #map {
       width: 100%;
-      height: 100%;
+      height: clamp(300px, 50vh, 900px);
+      min-height: 300px;
+      background: var(--muted);
+    }
+
+    @media (min-width: 1200px) {
+      /* On very wide screens use a slightly larger preferred height */
+      #map {
+        height: clamp(400px, 55vh, 1000px);
+      }
     }
 
     #right-sidebar {
-      background: #f8f9fa;
-      border-left: 2px solid #ddd;
-      padding: 1rem;
+      background: var(--muted);
+      padding: var(--space);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transform: translateX(100%);
-      transition: transform 0.3s ease-in-out;
-      overflow: hidden;
+      gap: 1rem;
+      max-height: 30vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      transition: all 0.3s ease-in-out;
+      transform: translateY(100%);
+      opacity: 0;
+    }
+
+    @media (min-width: 768px) {
+      #right-sidebar {
+        max-height: none;
+        transform: translateX(100%);
+        border-left: 1px solid #ddd;
+      }
+    }
+
+    .main-content.details-visible #right-sidebar {
+      transform: translate(0);
+      opacity: 1;
     }
 
     /* Legend styles */
@@ -143,9 +216,7 @@
       border: 1px solid rgba(0,0,0,0.2);
     }
 
-    body.details-visible #right-sidebar {
-      transform: translateX(0);
-    }
+    /* Removed duplicate transition class */
 
     #details {
       flex: 1;
