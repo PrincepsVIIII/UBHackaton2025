@@ -21,6 +21,7 @@ from app.schemas import (
     HelpRequestListItem,
     HelpRequestResponse,
     HelpRequestScoreResponse,
+    VolunteerAssignmentResponse,
 )
 from app.services.matching import compute_request_scores, anonymize_coordinates
 
@@ -320,6 +321,50 @@ async def get_active_assignment(
         request=_help_request_to_schema(help_request),
         assignment=AssignmentResponse.from_orm(assignment),
     )
+
+
+@router.get(
+    "/volunteer/assignments",
+    response_model=List[VolunteerAssignmentResponse],
+)
+async def list_volunteer_assignments(
+    status: Optional[str] = Query(
+        None,
+        description="Filter by assignment status grouping: active or history.",
+    ),
+    current_volunteer: User = Depends(get_current_volunteer),
+    db: Session = Depends(get_db),
+):
+    volunteer = db.merge(current_volunteer)
+
+    status_groups: dict[str, list[RequestStatusEnum]] = {
+        "active": [
+            RequestStatusEnum.ASSIGNED,
+            RequestStatusEnum.COMPLETION_PENDING_APPROVAL,
+        ],
+        "history": [
+            RequestStatusEnum.COMPLETED,
+            RequestStatusEnum.CANCELLED,
+        ],
+    }
+
+    if status is not None and status not in status_groups:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid status filter. Use 'active' or 'history'.",
+        )
+
+    assignments = crud.list_assignments_for_volunteer(
+        db, volunteer.id, status_groups.get(status)
+    )
+    return [
+        VolunteerAssignmentResponse(
+            assignment=AssignmentResponse.from_orm(assignment),
+            request=_help_request_to_schema(assignment.request),
+        )
+        for assignment in assignments
+        if assignment.request is not None
+    ]
 
 
 @router.post(

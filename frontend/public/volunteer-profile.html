@@ -150,72 +150,152 @@
   </div>
 
   <script>
-    // Example tasks data (replace with backend fetch)
-    const activeTasks = [
-      {
-        id: 1,
-        name: "Jay Shoemaker",
-        address: "892 Richmond Ave, Buffalo, NY",
-        description: "Need help picking up cough drops at around 2PM",
-        status: "active",
-        date: "Nov 8, 2025",
-        urgency: "High"
-      }
-    ];
-
-    const taskHistory = [
-      {
-        id: 2,
-        name: "John Smith",
-        address: "456 Main St, Buffalo, NY",
-        description: "Grocery delivery completed.",
-        status: "completed",
-        date: "Nov 7, 2025",
-        urgency: "Medium"
-      },
-      {
-        id: 3,
-        name: "Sarah Wilson",
-        address: "789 Elm St, Buffalo, NY",
-        description: "Snow removal from driveway.",
-        status: "completed",
-        date: "Nov 6, 2025",
-        urgency: "Low"
-      }
-    ];
-
-    function createTaskElement(task) {
-      const li = document.createElement("li");
-      li.className = "task-item";
-
-      const statusClass = task.status === "active" ? "status-active" : "status-completed";
-      const statusText = task.status === "active" ? "Active" : "Completed";
-
-      li.innerHTML = `
-        <span class="task-status ${statusClass}">${statusText}</span>
-        <div class="task-details">
-          <h3>${task.name}</h3>
-          <p>${task.description}</p>
-          <p>${task.address}</p>
-        </div>
-        <span class="task-date">${task.date}</span>
-      `;
-
-      return li;
-    }
-
-    // Populate tasks
     document.addEventListener("DOMContentLoaded", () => {
-      const activeTasksList = document.getElementById("active-tasks");
-      const taskHistoryList = document.getElementById("task-history");
+      const API_BASE = 'http://localhost:8000';
+      const token = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
 
-      activeTasks.forEach(task => {
-        activeTasksList.appendChild(createTaskElement(task));
-      });
+      if (!token || !storedUser) {
+        window.location.replace('/index.html');
+        return;
+      }
 
-      taskHistory.forEach(task => {
-        taskHistoryList.appendChild(createTaskElement(task));
-      });
+      const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+      if (!parsedUser || parsedUser.role !== 'volunteer') {
+        alert('Only volunteers can access the task dashboard.');
+        window.location.replace('/index.html');
+        return;
+      }
+
+      const activeList = document.getElementById('active-tasks');
+      const historyList = document.getElementById('task-history');
+
+      const statusDisplay = {
+        open: { label: 'Pending', className: 'status-active' },
+        assigned: { label: 'In Progress', className: 'status-active' },
+        completed_pending_approval: { label: 'Awaiting Approval', className: 'status-active' },
+        completed: { label: 'Completed', className: 'status-completed' },
+        cancelled: { label: 'Cancelled', className: 'status-completed' },
+        default: { label: 'Unknown', className: 'status-active' },
+      };
+
+      function renderEmptyState(listEl, message) {
+        listEl.innerHTML = '';
+        const li = document.createElement('li');
+        li.className = 'task-item';
+        li.innerHTML = `
+          <span class="task-status status-active">Info</span>
+          <div class="task-details">
+            <h3>${message}</h3>
+            <p>Check back later for updates.</p>
+          </div>
+          <span class="task-date"></span>
+        `;
+        listEl.appendChild(li);
+      }
+
+      function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (Number.isNaN(date.getTime())) return '';
+        return date.toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        });
+      }
+
+      function createTaskElement(entry, isHistorySection) {
+        const { assignment, request } = entry;
+        const statusKey = request.status?.toLowerCase?.() || 'default';
+        const statusInfo = statusDisplay[statusKey] || statusDisplay.default;
+
+        const urgencyLabel = request.urgency_level
+          ? request.urgency_level.charAt(0).toUpperCase() + request.urgency_level.slice(1)
+          : 'Unknown';
+
+        const completionDate =
+          request.completion_approved_at ||
+          request.completed_at ||
+          assignment.completed_at;
+
+        const dateToDisplay = isHistorySection
+          ? formatDate(completionDate)
+          : formatDate(assignment.assigned_at);
+
+        const li = document.createElement('li');
+        li.className = 'task-item';
+        li.innerHTML = `
+          <span class="task-status ${statusInfo.className}">${statusInfo.label}</span>
+          <div class="task-details">
+            <h3>${request.title || 'Assistance Request'}</h3>
+            <p>${request.description || 'No additional description provided.'}</p>
+            <p>${request.address_override || 'Location available on map'}</p>
+            <p><strong>Urgency:</strong> ${urgencyLabel}</p>
+          </div>
+          <span class="task-date">${dateToDisplay || ''}</span>
+        `;
+        return li;
+      }
+
+      async function loadAssignments(statusKey, targetList, emptyMessage) {
+        targetList.innerHTML = `
+          <li class="task-item">
+            <span class="task-status status-active">Loading</span>
+            <div class="task-details">
+              <h3>Fetching tasks...</h3>
+              <p>Please wait while we load your assignments.</p>
+            </div>
+            <span class="task-date"></span>
+          </li>
+        `;
+
+        try {
+          const url = new URL(`${API_BASE}/volunteer/assignments`);
+          if (statusKey) {
+            url.searchParams.set('status', statusKey);
+          }
+
+          const response = await fetch(url.toString(), {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (response.status === 401) {
+            window.location.replace('/index.html');
+            return;
+          }
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Failed to load assignments:', errorData);
+            renderEmptyState(targetList, emptyMessage);
+            return;
+          }
+
+          const data = await response.json();
+          const assignments = Array.isArray(data) ? data : [];
+
+          if (!assignments.length) {
+            renderEmptyState(targetList, emptyMessage);
+            return;
+          }
+
+          targetList.innerHTML = '';
+          assignments.forEach((entry) => {
+            targetList.appendChild(
+              createTaskElement(entry, statusKey === 'history')
+            );
+          });
+        } catch (error) {
+          console.error('Network error while loading assignments:', error);
+          renderEmptyState(targetList, emptyMessage);
+        }
+      }
+
+      loadAssignments('active', activeList, 'No active assignments yet.');
+      loadAssignments('history', historyList, 'No completed assignments yet.');
     });
   </script>
 </body>

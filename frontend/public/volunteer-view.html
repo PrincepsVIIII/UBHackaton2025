@@ -359,6 +359,14 @@
       let refreshTimer = null;
       let isFetching = false;
       let assignments = [];
+      const statusDisplay = {
+        open: { label: 'Pending', className: 'status-active' },
+        assigned: { label: 'In Progress', className: 'status-active' },
+        completed_pending_approval: { label: 'Awaiting Approval', className: 'status-active' },
+        completed: { label: 'Completed', className: 'status-completed' },
+        cancelled: { label: 'Cancelled', className: 'status-completed' },
+        default: { label: 'Unknown', className: 'status-active' },
+      };
 
       // Populate request list and add map markers (sorted by urgency)
       function populateRequestList() {
@@ -631,7 +639,9 @@
           const status = document.createElement('div');
           status.style.fontSize = '0.9rem';
           status.style.marginBottom = '0.5rem';
-          status.textContent = `Status: ${request.status || 'assigned'}`;
+          const statusKey = request.status?.toLowerCase?.() || 'default';
+          const statusInfo = statusDisplay[statusKey] || statusDisplay.default;
+          status.textContent = `Status: ${statusInfo.label}`;
 
           li.appendChild(title);
           li.appendChild(address);
@@ -654,7 +664,7 @@
       // Fetch volunteer's active assignments from backend
       async function fetchAssignments() {
         try {
-          const response = await fetch(`${API_BASE}/volunteer/active`, {
+          const response = await fetch(`${API_BASE}/volunteer/assignments?status=active`, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },
@@ -669,26 +679,7 @@
           }
 
           const data = await response.json();
-
-          if (!data) {
-            assignments = [];
-            renderAssignments();
-            return;
-          }
-
-          assignments = Array.isArray(data) ? data : [data].filter(Boolean);
-          assignments = assignments.filter(Boolean).map((item) => {
-            if (item.request && item.assignment) {
-              return item;
-            }
-            if (item.request) {
-              return { request: item.request, assignment: item.assignment || item };
-            }
-            if (item.assignment) {
-              return { request: item.request || item.assignment.request, assignment: item.assignment };
-            }
-            return null;
-          }).filter(Boolean);
+          assignments = Array.isArray(data) ? data : [];
 
           renderAssignments();
         } catch (error) {

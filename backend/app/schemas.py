@@ -152,3 +152,7 @@ class HelpRequestClaimResponse(BaseModel):
     request: HelpRequestResponse
     assignment: AssignmentResponse
 
+
+class VolunteerAssignmentResponse(BaseModel):
+    assignment: AssignmentResponse
+    request: HelpRequestResponse

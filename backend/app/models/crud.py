@@ -9,7 +9,7 @@ from typing import Any, Dict, Iterable, Optional
 from datetime import datetime
 
 from sqlalchemy import and_, delete, func, select, update
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models import (
     Assignment,
@@ -281,6 +281,23 @@ def get_active_assignment_for_volunteer(db: Session, volunteer_id: int) -> Optio
         .scalars()
         .first()
     )
+
+
+def list_assignments_for_volunteer(
+    db: Session,
+    volunteer_id: int,
+    statuses: Optional[Iterable[RequestStatusEnum]] = None,
+) -> list[Assignment]:
+    stmt = (
+        select(Assignment)
+        .join(Assignment.request)
+        .options(joinedload(Assignment.request))
+        .where(Assignment.volunteer_id == volunteer_id)
+        .order_by(Assignment.assigned_at.desc())
+    )
+    if statuses:
+        stmt = stmt.where(HelpRequest.status.in_(list(statuses)))
+    return db.execute(stmt).scalars().all()
 
 
 def mark_request_assigned(
