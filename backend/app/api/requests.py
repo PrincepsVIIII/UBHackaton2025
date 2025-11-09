@@ -28,6 +28,44 @@ from app.services.matching import compute_request_scores, anonymize_coordinates
 
 router = APIRouter(tags=["requests"])
 
+_GENERIC_CONTACT_LABELS = {"email", "phone", "call", "text", "sms"}
+
+
+def _normalize_alias(alias: Optional[str]) -> Optional[str]:
+    if not alias:
+        return None
+    cleaned = alias.strip()
+    if not cleaned:
+        return None
+    if cleaned.lower() in _GENERIC_CONTACT_LABELS:
+        return None
+    return cleaned
+
+
+def _prettify_email_local_part(email: str) -> Optional[str]:
+    local = email.split("@", 1)[0].strip()
+    if not local:
+        return None
+    separators = ["_", ".", "-"]
+    for sep in separators:
+        local = local.replace(sep, " ")
+    pretty = " ".join(word.capitalize() for word in local.split())
+    return pretty or None
+
+
+def _elder_display_name(elder: Optional[User]) -> Optional[str]:
+    if elder is None:
+        return None
+    alias = None
+    if elder.elder_profile and elder.elder_profile.preferred_contact_method:
+        alias = _normalize_alias(elder.elder_profile.preferred_contact_method)
+    if alias:
+        return alias
+    pretty_email = _prettify_email_local_part(elder.email)
+    if pretty_email:
+        return pretty_email
+    return elder.email
+
 
 def _active_assignment_schema(help_request: HelpRequest) -> AssignmentResponse | None:
     active_assignment = next(
@@ -55,15 +93,7 @@ def _resolved_address(help_request: HelpRequest) -> Optional[str]:
 
 
 def _help_request_to_schema(help_request: HelpRequest) -> HelpRequestResponse:
-    elder = help_request.elder
-    elder_display_name = None
-    if elder is not None:
-        if elder.elder_profile and elder.elder_profile.preferred_contact_method:
-            alias = elder.elder_profile.preferred_contact_method.strip()
-            if alias and alias.lower() not in {"email", "phone", "call", "text", "sms"}:
-                elder_display_name = alias
-        if elder_display_name is None:
-            elder_display_name = elder.email
+    elder_display_name = _elder_display_name(help_request.elder)
     return HelpRequestResponse(
         id=help_request.id,
         elder_id=help_request.elder_id,
@@ -88,15 +118,7 @@ def _help_request_to_schema(help_request: HelpRequest) -> HelpRequestResponse:
 
 def _help_request_list_item(help_request: HelpRequest) -> HelpRequestListItem:
     lat, lng = anonymize_coordinates(help_request.lat, help_request.lng)
-    elder = help_request.elder
-    elder_display_name = None
-    if elder is not None:
-        if elder.elder_profile and elder.elder_profile.preferred_contact_method:
-            alias = elder.elder_profile.preferred_contact_method.strip()
-            if alias and alias.lower() not in {"email", "phone", "call", "text", "sms"}:
-                elder_display_name = alias
-        if elder_display_name is None:
-            elder_display_name = elder.email
+    elder_display_name = _elder_display_name(help_request.elder)
     return HelpRequestListItem(
         id=help_request.id,
         title=help_request.title,
