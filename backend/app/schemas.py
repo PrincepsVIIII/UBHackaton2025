@@ -134,6 +134,8 @@ class HelpRequestResponse(HelpRequestBase):
 class HelpRequestListItem(BaseModel):
     id: int
     title: str
+    description: Optional[str] = None
+    address_override: Optional[str] = None
     lat: float
     lng: float
     urgency_level: UrgencyLevelEnum

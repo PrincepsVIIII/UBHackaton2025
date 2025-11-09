@@ -71,6 +71,8 @@ def _help_request_list_item(help_request: HelpRequest) -> HelpRequestListItem:
     return HelpRequestListItem(
         id=help_request.id,
         title=help_request.title,
+        description=help_request.description,
+        address_override=help_request.address_override,
         lat=lat,
         lng=lng,
         urgency_level=help_request.urgency_level,
