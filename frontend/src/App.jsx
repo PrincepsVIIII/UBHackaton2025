@@ -4,7 +4,7 @@ function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <h1>Buffalo Winter Elder Help Routing</h1>
+        <h1>Buffalo to the rescue</h1>
         <p>Pins highlight open elder requests prioritized by current conditions.</p>
       </header>
       <main>

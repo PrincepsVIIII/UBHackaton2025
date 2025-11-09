@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Volunteer Dashboard</title>
+
+  <!-- Leaflet CSS and JS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Custom CSS -->
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, Arial, sans-serif;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      grid-template-columns: 1fr;
+    }
+
+    .top-banner {
+      background: #007bff;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .top-banner h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    .profile-link {
+      display: flex;
+      align-items: center;
+      color: white;
+      text-decoration: none;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+
+    .profile-link:hover {
+      background-color: rgba(255,255,255,0.1);
+    }
+
+    .profile-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .profile-icon svg {
+      width: 20px;
+      height: 20px;
+      fill: #007bff;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 300px 1fr 0;
+      transition: grid-template-columns 0.3s ease-in-out;
+    }
+
+    .main-content.details-visible {
+      grid-template-columns: 300px 1fr 300px;
+    }
+
+    #left-sidebar {
+      background: #f8f9fa;
+      border-right: 2px solid #ddd;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+
+    .request-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .request-item {
+      padding: 1rem;
+      border-bottom: 1px solid #ddd;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .request-item:hover {
+      background-color: #e9ecef;
+    }
+
+    .request-item.active {
+      background-color: #e2e6ea;
+      border-left: 4px solid #007bff;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    #right-sidebar {
+      background: #f8f9fa;
+      border-left: 2px solid #ddd;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transform: translateX(100%);
+      transition: transform 0.3s ease-in-out;
+      overflow: hidden;
+    }
+
+    /* Legend styles */
+    .legend {
+      background: white;
+      padding: 8px 10px;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      font-family: system-ui, Arial, sans-serif;
+      font-size: 13px;
+      line-height: 20px;
+    }
+
+    .legend .color-box {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      margin-right: 8px;
+      vertical-align: middle;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.2);
+    }
+
+    body.details-visible #right-sidebar {
+      transform: translateX(0);
+    }
+
+    #details {
+      flex: 1;
+    }
+
+    .detail-item {
+      margin-bottom: 0.5rem;
+    }
+
+    button {
+      padding: 10px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    button:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Top Banner -->
+  <div class="top-banner">
+    <h1>Volunteer Map</h1>
+    <a href="volunteer-profile.html" class="profile-link">
+      <span>My Tasks</span>
+      <div class="profile-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
+      </div>
+    </a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Left Sidebar - Request List -->
+    <div id="left-sidebar">
+      <h2>Available Requests</h2>
+      <ul id="request-list" class="request-list">
+        <!-- Request items will be dynamically added here -->
+      </ul>
+    </div>
+
+    <!-- Map Container -->
+  <div id="map"></div>
+
+  <!-- Right Sidebar - Request Details -->
+  <div id="right-sidebar">
+    <div id="details">
+      <h2>Request Details</h2>
+      <p>Select a request to view details.</p>
+      <div class="detail-item"><strong>Name:</strong> <span id="req-name">-</span></div>
+      <div class="detail-item"><strong>Address:</strong> <span id="req-address">-</span></div>
+      <div class="detail-item"><strong>Description:</strong> <span id="req-desc">-</span></div>
+    </div>
+    <button id="accept-btn" disabled>Accept Request</button>
+  </div>
+
+  <!-- Custom JS -->
+  <script>
+    // Wait for DOM to be ready
+    document.addEventListener("DOMContentLoaded", function() {
+
+      // Initialize map (Buffalo, NY)
+      const map = L.map("map").setView([42.8864, -78.8784], 12);
+
+      // Add OpenStreetMap tiles
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(map);
+
+      // Helper to create a colored SVG pin icon (data URI)
+      function createPinIcon(color) {
+        const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 36' width='30' height='45'><path d='M12 0C7 0 3 4 3 9c0 7.5 9 21 9 21s9-13.5 9-21c0-5-4-9-9-9z' fill='${color}' stroke='#333' stroke-width='1'/><circle cx='12' cy='9' r='4' fill='white' opacity='0.9'/></svg>`;
+        const url = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+        return L.icon({
+          iconUrl: url,
+          iconSize: [24, 36],
+          iconAnchor: [12, 36],
+          popupAnchor: [0, -28]
+        });
+      }
+
+      // Legend for urgency colors (moved to top-right)
+      const legend = L.control({ position: 'topright' });
+      legend.onAdd = function () {
+        const div = L.DomUtil.create('div', 'legend');
+        div.innerHTML = `
+          <div><span class="color-box" style="background:#dc3545"></span>High</div>
+          <div><span class="color-box" style="background:#ffc107"></span>Medium</div>
+          <div><span class="color-box" style="background:#28a745"></span>Low</div>
+        `;
+        return div;
+      };
+      legend.addTo(map);
+
+      // Placeholder request data (replace with backend fetch)
+      const requests = [
+        { id: 1, name: "John Doe", address: "123 Main St, Buffalo, NY", desc: "Needs assistance with grocery delivery. Has dietary restrictions (gluten-free).", lat: 42.8925, lng: -78.8718, urgency: "Medium" },
+        { id: 2, name: "Mary Smith", address: "245 Elmwood Ave, Buffalo, NY", desc: "Requires medication pickup from CVS Pharmacy. Prescription ready for pickup.", lat: 42.913, lng: -78.878, urgency: "High" },
+        { id: 3, name: "James Lee", address: "60 Niagara St, Buffalo, NY", desc: "Needs winter clothing donations - specifically warm coat (size L) and boots (size 10).", lat: 42.89, lng: -78.89, urgency: "Low" },
+        { id: 4, name: "Sarah Johnson", address: "389 Delaware Ave, Buffalo, NY", desc: "Senior citizen needs help with snow removal from driveway and walkway.", lat: 42.9012, lng: -78.8725, urgency: "Medium" },
+        { id: 5, name: "Robert Chen", address: "567 Forest Ave, Buffalo, NY", desc: "Technology assistance needed - help setting up new phone for emergency contacts.", lat: 42.915, lng: -78.885, urgency: "Low" },
+        { id: 6, name: "Emily Martinez", address: "892 Richmond Ave, Buffalo, NY", desc: "Transportation needed to medical appointment on Monday at 2PM.", lat: 42.9198, lng: -78.888, urgency: "High" },
+        { id: 7, name: "David Wilson", address: "145 Bryant St, Buffalo, NY", desc: "Pet care assistance - needs help walking dog for next 3 days while recovering from surgery.", lat: 42.9032, lng: -78.8741, urgency: "Medium" },
+        { id: 8, name: "Patricia Brown", address: "734 Hertel Ave, Buffalo, NY", desc: "Needs help organizing and cleaning garage before winter. Heavy lifting required.", lat: 42.9472, lng: -78.8556, urgency: "Low" }
+      ];
+
+      let selectedRequest = null;
+      const markers = new Map();
+
+      // Populate request list and add map markers
+      function populateRequestList() {
+        const requestList = document.getElementById("request-list");
+        requestList.innerHTML = "";
+
+        requests.forEach((req) => {
+          const li = document.createElement("li");
+          li.className = "request-item";
+          const urgencyColor = { High: "#dc3545", Medium: "#ffc107", Low: "#28a745" };
+
+          li.innerHTML = `
+            <div style="border-left: 4px solid ${urgencyColor[req.urgency]}; padding-left: 8px;">
+              <strong>${req.name}</strong><br>
+              <small>${req.address}</small><br>
+              <small style="color: ${urgencyColor[req.urgency]}"><strong>${req.urgency} Priority</strong></small>
+            </div>
+          `;
+
+          li.addEventListener("click", () => selectRequest(req));
+          requestList.appendChild(li);
+
+          // Use a colored SVG pin marker so pins reflect urgency
+          const marker = L.marker([req.lat, req.lng], {
+            icon: createPinIcon(urgencyColor[req.urgency])
+          }).addTo(map);
+
+          marker.bindPopup(`<b>${req.name}</b><br>${req.address}`);
+          marker.on("click", () => selectRequest(req));
+          markers.set(req.id, marker);
+        });
+      }
+
+      // Select a request
+      function selectRequest(req) {
+        selectedRequest = req;
+
+        document.querySelectorAll(".request-item").forEach((item) => {
+          item.classList.remove("active");
+          if (item.querySelector("strong").textContent === req.name) {
+            item.classList.add("active");
+          }
+        });
+
+        document.getElementById("req-name").textContent = req.name;
+        document.getElementById("req-address").textContent = req.address;
+        document.getElementById("req-desc").textContent = req.desc;
+        document.getElementById("accept-btn").disabled = false;
+        
+        // Show details sidebar
+        document.querySelector('.main-content').classList.add("details-visible");
+        
+        // Wait for sidebar animation to complete before updating map
+        setTimeout(() => {
+          map.invalidateSize();
+
+          const marker = markers.get(req.id);
+          if (!marker) {
+            // fallback: just set view if marker is missing
+            map.setView([req.lat, req.lng], 14);
+            return;
+          }
+
+          // Ensure the map recenters first, then open the popup.
+          // Opening a popup can auto-pan the map which may override centering,
+          // so we wait for the move to finish and then open the popup.
+          map.once('moveend', () => {
+            // open popup (autoPan is fine here because move already ended)
+            marker.openPopup();
+          });
+
+          map.setView([req.lat, req.lng], 14);
+        }, 300);
+      }
+
+      // Accept request
+      document.getElementById("accept-btn").addEventListener("click", () => {
+        if (!selectedRequest) return;
+        alert(`Request from ${selectedRequest.name} has been accepted!`);
+
+        // Example backend call placeholder:
+        // fetch('/api/accept', { method: 'POST', body: JSON.stringify({ id: selectedRequest.id }) });
+
+        markers.get(selectedRequest.id).remove();
+        requests.splice(requests.findIndex((r) => r.id === selectedRequest.id), 1);
+
+        selectedRequest = null;
+        document.getElementById("req-name").textContent = "-";
+        document.getElementById("req-address").textContent = "-";
+        document.getElementById("req-desc").textContent = "-";
+        document.getElementById("accept-btn").disabled = true;
+        document.querySelector('.main-content').classList.remove("details-visible");
+
+        // Wait for sidebar animation to complete before updating map
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 300);
+
+        populateRequestList();
+      });
+
+      // Initialize
+      populateRequestList();
+    });
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Volunteer Dashboard</title>
+
+  <!-- Leaflet CSS and JS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Custom CSS -->
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, Arial, sans-serif;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 300px 1fr 300px;
+    }
+
+    #left-sidebar {
+      background: #f8f9fa;
+      border-right: 2px solid #ddd;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+
+    .request-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .request-item {
+      padding: 1rem;
+      border-bottom: 1px solid #ddd;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .request-item:hover {
+      background-color: #e9ecef;
+    }
+
+    .request-item.active {
+      background-color: #e2e6ea;
+      border-left: 4px solid #007bff;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    #right-sidebar {
+      background: #f8f9fa;
+      border-left: 2px solid #ddd;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    #details {
+      flex: 1;
+    }
+
+    .detail-item {
+      margin-bottom: 0.5rem;
+    }
+
+    button {
+      padding: 10px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    button:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Left Sidebar - Request List -->
+  <div id="left-sidebar">
+    <h2>Available Requests</h2>
+    <ul id="request-list" class="request-list">
+      <!-- Request items will be dynamically added here -->
+    </ul>
+  </div>
+
+  <!-- Map Container -->
+  <div id="map"></div>
+
+  <!-- Right Sidebar - Request Details -->
+  <div id="right-sidebar">
+    <div id="details">
+      <h2>Request Details</h2>
+      <p>Select a request to view details.</p>
+      <div class="detail-item"><strong>Name:</strong> <span id="req-name">-</span></div>
+      <div class="detail-item"><strong>Address:</strong> <span id="req-address">-</span></div>
+      <div class="detail-item"><strong>Description:</strong> <span id="req-desc">-</span></div>
+    </div>
+    <button id="accept-btn" disabled>Accept Request</button>
+  </div>
+
+  <!-- Custom JS -->
+  <script>
+    // Wait for DOM to be ready
+    document.addEventListener("DOMContentLoaded", function() {
+
+      // Initialize map (Buffalo, NY)
+      const map = L.map("map").setView([42.8864, -78.8784], 12);
+
+      // Add OpenStreetMap tiles
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(map);
+
+      // Placeholder request data (replace with backend fetch)
+      const requests = [
+        { id: 1, name: "John Doe", address: "123 Main St, Buffalo, NY", desc: "Needs assistance with grocery delivery. Has dietary restrictions (gluten-free).", lat: 42.8925, lng: -78.8718, urgency: "Medium" },
+        { id: 2, name: "Mary Smith", address: "245 Elmwood Ave, Buffalo, NY", desc: "Requires medication pickup from CVS Pharmacy. Prescription ready for pickup.", lat: 42.913, lng: -78.878, urgency: "High" },
+        { id: 3, name: "James Lee", address: "60 Niagara St, Buffalo, NY", desc: "Needs winter clothing donations - specifically warm coat (size L) and boots (size 10).", lat: 42.89, lng: -78.89, urgency: "Low" },
+        { id: 4, name: "Sarah Johnson", address: "389 Delaware Ave, Buffalo, NY", desc: "Senior citizen needs help with snow removal from driveway and walkway.", lat: 42.9012, lng: -78.8725, urgency: "Medium" },
+        { id: 5, name: "Robert Chen", address: "567 Forest Ave, Buffalo, NY", desc: "Technology assistance needed - help setting up new phone for emergency contacts.", lat: 42.915, lng: -78.885, urgency: "Low" },
+        { id: 6, name: "Emily Martinez", address: "892 Richmond Ave, Buffalo, NY", desc: "Transportation needed to medical appointment on Monday at 2PM.", lat: 42.9198, lng: -78.888, urgency: "High" },
+        { id: 7, name: "David Wilson", address: "145 Bryant St, Buffalo, NY", desc: "Pet care assistance - needs help walking dog for next 3 days while recovering from surgery.", lat: 42.9032, lng: -78.8741, urgency: "Medium" },
+        { id: 8, name: "Patricia Brown", address: "734 Hertel Ave, Buffalo, NY", desc: "Needs help organizing and cleaning garage before winter. Heavy lifting required.", lat: 42.9472, lng: -78.8556, urgency: "Low" }
+      ];
+
+      let selectedRequest = null;
+      const markers = new Map();
+
+      // Populate request list and add map markers
+      function populateRequestList() {
+        const requestList = document.getElementById("request-list");
+        requestList.innerHTML = "";
+
+        requests.forEach((req) => {
+          const li = document.createElement("li");
+          li.className = "request-item";
+          const urgencyColor = { High: "#dc3545", Medium: "#ffc107", Low: "#28a745" };
+
+          li.innerHTML = `
+            <div style="border-left: 4px solid ${urgencyColor[req.urgency]}; padding-left: 8px;">
+              <strong>${req.name}</strong><br>
+              <small>${req.address}</small><br>
+              <small style="color: ${urgencyColor[req.urgency]}"><strong>${req.urgency} Priority</strong></small>
+            </div>
+          `;
+
+          li.addEventListener("click", () => selectRequest(req));
+          requestList.appendChild(li);
+
+          const marker = L.marker([req.lat, req.lng]).addTo(map);
+          marker.bindPopup(`<b>${req.name}</b><br>${req.address}`);
+          marker.on("click", () => selectRequest(req));
+          markers.set(req.id, marker);
+        });
+      }
+
+      // Select a request
+      function selectRequest(req) {
+        selectedRequest = req;
+
+        document.querySelectorAll(".request-item").forEach((item) => {
+          item.classList.remove("active");
+          if (item.querySelector("strong").textContent === req.name) {
+            item.classList.add("active");
+          }
+        });
+
+        document.getElementById("req-name").textContent = req.name;
+        document.getElementById("req-address").textContent = req.address;
+        document.getElementById("req-desc").textContent = req.desc;
+        document.getElementById("accept-btn").disabled = false;
+
+        map.setView([req.lat, req.lng], 14);
+        markers.get(req.id).openPopup();
+      }
+
+      // Accept request
+      document.getElementById("accept-btn").addEventListener("click", () => {
+        if (!selectedRequest) return;
+        alert(`Request from ${selectedRequest.name} has been accepted!`);
+
+        // Example backend call placeholder:
+        // fetch('/api/accept', { method: 'POST', body: JSON.stringify({ id: selectedRequest.id }) });
+
+        markers.get(selectedRequest.id).remove();
+        requests.splice(requests.findIndex((r) => r.id === selectedRequest.id), 1);
+
+        selectedRequest = null;
+        document.getElementById("req-name").textContent = "-";
+        document.getElementById("req-address").textContent = "-";
+        document.getElementById("req-desc").textContent = "-";
+        document.getElementById("accept-btn").disabled = true;
+
+        populateRequestList();
+      });
+
+      // Initialize
+      populateRequestList();
+    });
+  </script>
+</body>
+</html>

@@ -23,7 +23,10 @@ EMAIL_FROM=noreply@example.com
 EMAIL_USE_CONSOLE=true
 # Optional overrides
 # ACCESS_TOKEN_EXPIRE_MINUTES=1440
-# LOGIN_TOKEN_EXPIRE_MINUTES=15
+# OTP_EXPIRE_MINUTES=5
+# MAX_OPEN_REQUESTS_PER_ELDER=1
+# ADMIN_EMAILS=admin1@example.edu,admin2@example.edu
+# ADMIN_SECRET=super-secret-token
 ```
 
 > The SQLite database is stored at `./backend/app.db` by default. Override with `DATABASE_URL` if needed.
@@ -44,3 +47,37 @@ uvicorn main:app --reload
 ```
 
 The API will be available at `http://127.0.0.1:8000`. Visit `http://127.0.0.1:8000/docs` for the interactive Swagger UI.
+
+### Lifecycle Flow Examples
+
+Replace the `Authorization` values with real bearer tokens from the OTP login flow.
+
+```
+# Elder creates a request (enforces MAX_OPEN_REQUESTS_PER_ELDER)
+curl -X POST http://127.0.0.1:8000/help-request \
+  -H "Authorization: Bearer ${ELDER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Shovel walkway","description":"Need help clearing path","address_override":null,"lat":42.8864,"lng":-78.8784,"urgency_level":"high","weather_factor":0.8}'
+
+# Volunteer lists open requests
+curl "http://127.0.0.1:8000/requests/open?volunteer_lat=42.9&volunteer_lng=-78.88" \
+  -H "Authorization: Bearer ${VOLUNTEER_TOKEN}"
+
+# Volunteer claims a request
+curl -X POST http://127.0.0.1:8000/requests/123/claim \
+  -H "Authorization: Bearer ${VOLUNTEER_TOKEN}"
+
+# Volunteer marks the assignment complete (moves request to completed_pending_approval)
+curl -X POST http://127.0.0.1:8000/requests/123/complete \
+  -H "Authorization: Bearer ${VOLUNTEER_TOKEN}"
+
+# Elder approves completion (finalizes the request)
+curl -X POST http://127.0.0.1:8000/requests/123/approve-completion \
+  -H "Authorization: Bearer ${ELDER_TOKEN}"
+
+# Admin force-closes a request (requires allowlisted admin or X-Admin-Secret)
+curl -X POST http://127.0.0.1:8000/admin/requests/123/force-close \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+  -H "X-Admin-Secret: ${ADMIN_SECRET}"
+```
+
