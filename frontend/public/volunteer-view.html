@@ -638,15 +638,16 @@
 
           const title = document.createElement('div');
           title.style.fontWeight = 'bold';
-          title.innerHTML = request.elder_display_name || 'Unknown Elder';
+          title.innerHTML = request.title || 'Assistance Request';
 
           const address = document.createElement('div');
           address.style.fontSize = '0.9rem';
           address.textContent = request.address_override || request.address || 'See map for location';
 
-          const requestTitle = document.createElement('div');
-          requestTitle.style.fontSize = '0.9rem';
-          requestTitle.textContent = `Request: ${request.title || 'Assistance Request'}`;
+          const elderLine = document.createElement('div');
+          elderLine.style.fontSize = '0.9rem';
+          elderLine.style.color = '#555';
+          elderLine.textContent = `Requested by ${request.elder_display_name || 'Unknown Elder'}`;
 
           const urgency = document.createElement('div');
           urgency.style.fontSize = '0.9rem';
@@ -661,7 +662,7 @@
           status.textContent = `Status: ${statusInfo.label}`;
 
           li.appendChild(title);
-          li.appendChild(requestTitle);
+          li.appendChild(elderLine);
           li.appendChild(address);
           li.appendChild(urgency);
           li.appendChild(status);

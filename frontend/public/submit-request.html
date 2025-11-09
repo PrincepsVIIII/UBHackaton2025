@@ -311,6 +311,7 @@
         <span class="task-status ${statusInfo.className}">${statusInfo.label}</span>
         <div class="task-details">
           <h3>${request.title}</h3>
+          <p><strong>Requested by:</strong> ${request.elder_display_name || 'You'}</p>
           <p>${request.description || ''}</p>
           <p>${addressText}</p>
           <p><strong>Urgency:</strong> ${request.urgency_level ? request.urgency_level.charAt(0).toUpperCase() + request.urgency_level.slice(1) : 'Unknown'}</p>

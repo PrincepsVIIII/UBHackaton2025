@@ -230,8 +230,8 @@
         li.innerHTML = `
           <span class="task-status ${statusInfo.className}">${statusInfo.label}</span>
           <div class="task-details">
-            <h3>${elderName}</h3>
-            <p><strong>Request:</strong> ${request.title || 'Assistance Request'}</p>
+            <h3>${request.title || 'Assistance Request'}</h3>
+            <p><strong>Requested by:</strong> ${elderName}</p>
             <p>${request.description || 'No additional description provided.'}</p>
           <p>${addressText}</p>
             <p><strong>Urgency:</strong> ${urgencyLabel}</p>
