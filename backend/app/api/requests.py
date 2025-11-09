@@ -23,6 +23,7 @@ from app.schemas import (
     HelpRequestScoreResponse,
     VolunteerAssignmentResponse,
 )
+from app.services.geocoding import geocode_address
 from app.services.matching import compute_request_scores, anonymize_coordinates
 
 router = APIRouter(tags=["requests"])
@@ -113,14 +114,26 @@ async def create_help_request(
             detail="You have reached the maximum number of active requests.",
         )
 
+    lat = payload.lat
+    lng = payload.lng
+
+    geocode_source = (
+        payload.address_override
+        or (elder.elder_profile.address if elder.elder_profile else None)
+    )
+    if geocode_source:
+        coords = await geocode_address(geocode_source)
+        if coords:
+            lat, lng = coords
+
     help_request = crud.create_help_request(
         db,
         elder=elder,
         title=payload.title,
         description=payload.description,
         address_override=payload.address_override,
-        lat=payload.lat,
-        lng=payload.lng,
+        lat=lat,
+        lng=lng,
         urgency_level=payload.urgency_level,
         weather_factor=payload.weather_factor,
     )
