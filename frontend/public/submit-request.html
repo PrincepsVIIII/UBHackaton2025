@@ -318,16 +318,21 @@
         <span class="task-date">${createdDate}</span>
       `;
 
-      if (request.status === 'completion_pending_approval') {
+      if (request.status === 'completion_pending_approval' || request.status === 'completed') {
         const details = li.querySelector('.task-details');
         if (details) {
           const approveButton = document.createElement('button');
           approveButton.textContent = 'Approve Completion';
           approveButton.className = 'submit-btn';
           approveButton.style.marginTop = '0.75rem';
+          approveButton.style.backgroundColor = request.status === 'completed' ? '#9ca3af' : '#16a34a';
+          approveButton.style.border = 'none';
+          approveButton.style.fontWeight = '600';
+          approveButton.style.cursor = request.status === 'completed' ? 'default' : 'pointer';
           approveButton.addEventListener('click', () =>
             approveCompletion(request.id, approveButton)
           );
+          approveButton.disabled = request.status === 'completed';
           details.appendChild(approveButton);
         }
       }

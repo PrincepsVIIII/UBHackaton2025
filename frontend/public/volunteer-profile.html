@@ -240,9 +240,22 @@
       if (!isHistorySection && request.status === 'assigned') {
         const details = li.querySelector('.task-details');
         if (details) {
+          details.style.display = 'flex';
+          details.style.flexDirection = 'column';
+
           const completeButton = document.createElement('button');
           completeButton.textContent = 'Mark Completed';
           completeButton.style.marginTop = '0.5rem';
+          completeButton.style.alignSelf = 'flex-end';
+          completeButton.style.backgroundColor = '#16a34a';
+          completeButton.style.border = 'none';
+          completeButton.style.color = '#ffffff';
+          completeButton.style.fontWeight = '600';
+          completeButton.style.padding = '0.5rem 1.25rem';
+          completeButton.style.borderRadius = '8px';
+          completeButton.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+          completeButton.style.cursor = 'pointer';
+
           completeButton.addEventListener('click', () =>
             markRequestCompleted(request.id, completeButton)
           );
