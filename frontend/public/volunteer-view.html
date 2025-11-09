@@ -428,6 +428,7 @@
             <small style="color:${urgencyColor[urgencyKey] || urgencyColor.low}"><strong>${urgencyLabel} Priority</strong></small><br>
           `;
 
+          /*
           const claimButton = document.createElement('button');
           claimButton.textContent = 'Claim';
           claimButton.style.marginTop = '6px';
@@ -435,7 +436,7 @@
             event.preventDefault();
             claimRequest(request.id);
           });
-
+          */
           popupContent.appendChild(claimButton);
 
           marker.bindPopup(popupContent, { closeButton: false });
