@@ -289,7 +289,7 @@
     const statusDisplay = {
       open: { label: 'Pending', className: 'status-active' },
       assigned: { label: 'Assigned', className: 'status-active' },
-      completion_pending_approval: { label: 'Awaiting Approval', className: 'status-active' },
+      completed_pending_approval: { label: 'Awaiting Approval', className: 'status-active' },
       completed: { label: 'Completed', className: 'status-completed' },
       cancelled: { label: 'Cancelled', className: 'status-completed' },
     };
@@ -318,7 +318,7 @@
         <span class="task-date">${createdDate}</span>
       `;
 
-      if (request.status === 'completion_pending_approval' || request.status === 'completed') {
+      if (request.status === 'completed_pending_approval' || request.status === 'completed') {
         const details = li.querySelector('.task-details');
         if (details) {
           const approveButton = document.createElement('button');
