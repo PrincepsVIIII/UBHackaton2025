@@ -83,9 +83,18 @@
   <div class="container">
     <h2>Secure Sign-In</h2>
     <form id="loginForm">
-      <input type="email" id="email" placeholder="Email" required />
-      <button type="submit">Login</button>
+      <input type="email" id="email" placeholder="Email (.edu required)" required />
+      <select id="role" required>
+        <option value="">Select Role</option>
+        <option value="elder">Elder</option>
+        <option value="volunteer">Volunteer</option>
+      </select>
+      <button type="submit" id="requestBtn">Request Code</button>
     </form>
+    <div id="codeSection" style="display: none;">
+      <input type="text" id="code" placeholder="Enter 6-digit code" maxlength="6" pattern="\d{6}" required />
+      <button type="button" id="verifyBtn">Verify Code</button>
+    </div>
     <div id="status">Not signed in</div>
   </div>
 
@@ -95,24 +104,74 @@
 
   <script>
     const form = document.getElementById('loginForm');
+    const codeSection = document.getElementById('codeSection');
     const status = document.getElementById('status');
+    const API_BASE = 'http://localhost:8000';
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('email').value;
+      const role = document.getElementById('role').value;
 
-      const res = await fetch('http://localhost:8000/login', {
+      if (!role) {
+        status.textContent = 'Please select a role';
+        status.style.color = '#dc2626';
+        return;
+      }
+
+      status.textContent = 'Requesting code...';
+      status.style.color = '#4b5563';
+
+      const res = await fetch(`${API_BASE}/auth/request-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, role })
+      });
+
+      if (res.ok) {
+        status.textContent = 'Code sent! Check console for OTP.';
+        status.style.color = '#16a34a';
+        form.style.display = 'none';
+        codeSection.style.display = 'flex';
+        codeSection.style.flexDirection = 'column';
+        codeSection.style.gap = '1rem';
+      } else {
+        const data = await res.json();
+        status.textContent = data.detail || 'Request failed';
+        status.style.color = '#dc2626';
+      }
+    });
+
+    document.getElementById('verifyBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const code = document.getElementById('code').value;
+
+      if (code.length !== 6) {
+        status.textContent = 'Code must be 6 digits';
+        status.style.color = '#dc2626';
+        return;
+      }
+
+      status.textContent = 'Verifying...';
+      status.style.color = '#4b5563';
+
+      const res = await fetch(`${API_BASE}/auth/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code })
       });
 
       const data = await res.json();
       if (res.ok) {
-        status.textContent = `Signed in as: ${data.email}`;
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        status.textContent = `Signed in as: ${data.user.email}`;
         status.style.color = '#16a34a';
+        setTimeout(() => {
+          window.location.href = '/volunteer-view.html';
+        }, 1000);
       } else {
-        status.textContent = data.detail || 'Login failed';
+        status.textContent = data.detail || 'Verification failed';
         status.style.color = '#dc2626';
       }
     });
