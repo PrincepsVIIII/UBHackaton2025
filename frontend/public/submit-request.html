@@ -433,8 +433,12 @@
     function resetForm() {
       document.getElementById('helpDetails').value = '';
       document.getElementById('additionalNotes').value = '';
-      document.getElementById('contactMethod').value = '';
+      const contactInput = document.getElementById('contactMethod');
+      if (contactInput) {
+        contactInput.value = '';
+      }
       document.getElementById('priority').value = 'High';
+      document.getElementById('estimateTime').value = '30';
     }
 
     function buildDescription(details, notes, contact) {
@@ -466,7 +470,8 @@
       const priority = document.getElementById('priority').value;
       const help = document.getElementById('helpDetails').value.trim();
       const notes = document.getElementById('additionalNotes').value.trim();
-      const contact = document.getElementById('contactMethod').value.trim();
+      const contactInput = document.getElementById('contactMethod');
+      const contact = contactInput ? contactInput.value.trim() : '';
 
       if (!help) {
         alert('Please fill out the Help Request Details.');
