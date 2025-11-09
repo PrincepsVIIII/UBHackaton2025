@@ -225,15 +225,23 @@
 
         const li = document.createElement('li');
         li.className = 'task-item';
-      const addressText = request.address_override || request.address || 'Location available on map';
+        const addressText = request.address_override || request.address || 'Location available on map';
         const elderName = request.elder_display_name || 'Unknown Elder';
+        const titleText = request.title || 'Assistance Request';
+        const rawDescription = (request.description || '').trim();
+        const descriptionMatchesTitle =
+          rawDescription &&
+          rawDescription.toLowerCase() === titleText.trim().toLowerCase();
+        const descriptionText = rawDescription && !descriptionMatchesTitle
+          ? rawDescription
+          : 'No additional notes provided.';
         li.innerHTML = `
           <span class="task-status ${statusInfo.className}">${statusInfo.label}</span>
           <div class="task-details">
             <h3>${elderName}</h3>
-            <p class="request-title">${request.title || 'Assistance Request'}</p>
-            <p>${request.description || 'No additional description provided.'}</p>
-            <p>${addressText}</p>
+            <p class="request-title">${titleText}</p>
+            <p><strong>Additional notes:</strong> ${descriptionText}</p>
+            <p><strong>Address:</strong> ${addressText}</p>
             <p><strong>Urgency:</strong> ${urgencyLabel}</p>
           </div>
           <span class="task-date">${dateToDisplay || ''}</span>
