@@ -30,15 +30,6 @@ def _create_token(data: Dict[str, Any], expires_delta: timedelta, token_type: st
     return jwt.encode(to_encode, settings.secret_key, algorithm=ALGORITHM)
 
 
-def create_login_token(payload: Dict[str, Any]) -> str:
-    """
-    Generates a short-lived JWT used in passwordless email login links.
-    """
-
-    expires = timedelta(minutes=settings.login_token_expire_minutes)
-    return _create_token(payload, expires, token_type="login")
-
-
 def create_access_token(payload: Dict[str, Any]) -> str:
     """
     Generates the session JWT returned after a successful login.

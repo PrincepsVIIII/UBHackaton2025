@@ -16,6 +16,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    JSON,
     String,
     Text,
 )
@@ -38,6 +39,7 @@ class UrgencyLevelEnum(str, enum.Enum):
 class RequestStatusEnum(str, enum.Enum):
     OPEN = "open"
     ASSIGNED = "assigned"
+    COMPLETION_PENDING_APPROVAL = "completed_pending_approval"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
@@ -53,11 +55,10 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
-    name = Column(String(255), nullable=True)
-    phone = Column(String(50), nullable=True)
     role = Column(Enum(RoleEnum, name="user_role_enum"), nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
+    is_suspended = Column(Boolean, nullable=False, default=False)
 
     elder_profile = relationship(
         "ElderProfile",
@@ -147,6 +148,10 @@ class HelpRequest(Base):
         default=RequestStatusEnum.OPEN,
     )
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    assigned_at = Column(DateTime, nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    completion_approved_at = Column(DateTime, nullable=True)
 
     elder = relationship("User", back_populates="help_requests")
     assignments = relationship(
@@ -176,4 +181,36 @@ class Assignment(Base):
 
     request = relationship("HelpRequest", back_populates="assignments")
     volunteer = relationship("User", back_populates="volunteer_assignments")
+
+
+class EmailOTP(Base):
+    __tablename__ = "email_otps"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), nullable=False, index=True)
+    code_hash = Column(String(128), nullable=False)
+    role = Column(Enum(RoleEnum, name="email_otp_role_enum"), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+
+class EventLog(Base):
+    __tablename__ = "event_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_type = Column(String(255), nullable=False)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    request_id = Column(
+        Integer,
+        ForeignKey("help_requests.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    event_metadata = Column(JSON, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 

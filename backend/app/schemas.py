@@ -14,14 +14,13 @@ from app.models import RequestStatusEnum, RoleEnum, UrgencyLevelEnum
 
 class UserBase(BaseModel):
     email: EmailStr
-    name: Optional[str] = None
-    phone: Optional[str] = None
     role: Optional[RoleEnum] = Field(default=None)
 
 
 class UserResponse(UserBase):
     id: int
     created_at: datetime
+    is_suspended: bool
 
     class Config:
         orm_mode = True
@@ -70,16 +69,19 @@ class MeResponse(BaseModel):
         orm_mode = True
 
 
-class LoginRequest(BaseModel):
+class OTPRequest(BaseModel):
     email: EmailStr
     role: RoleEnum
 
 
-class LoginRequestResponse(BaseModel):
-    message: str
-    login_url: Optional[str] = Field(
-        default=None,
-        description="Magic link for demo convenience when console email is used.",
+class OTPVerify(BaseModel):
+    email: EmailStr
+    code: str = Field(
+        ...,
+        min_length=6,
+        max_length=6,
+        pattern=r"^\d{6}$",
+        description="Six digit verification code sent to the user's email.",
     )
 
 
@@ -119,14 +121,30 @@ class HelpRequestResponse(HelpRequestBase):
     elder_id: int
     status: RequestStatusEnum
     created_at: datetime
+    assigned_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    completion_approved_at: Optional[datetime] = None
     current_assignment: Optional[AssignmentResponse] = None
 
     class Config:
         orm_mode = True
 
 
+class HelpRequestListItem(BaseModel):
+    id: int
+    title: str
+    lat: float
+    lng: float
+    urgency_level: UrgencyLevelEnum
+    status: RequestStatusEnum
+
+    class Config:
+        orm_mode = True
+
+
 class HelpRequestScoreResponse(BaseModel):
-    request: HelpRequestResponse
+    request: HelpRequestListItem
     score: float = Field(default=1.0, ge=0.0)
 
 

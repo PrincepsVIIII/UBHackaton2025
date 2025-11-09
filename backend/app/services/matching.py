@@ -22,6 +22,14 @@ URGENCY_WEIGHTS = {
 }
 
 
+def anonymize_coordinates(lat: float, lng: float, *, decimals: int = 3) -> tuple[float, float]:
+    """
+    Returns rounded latitude/longitude pair used for privacy-safe map rendering.
+    """
+
+    return (round(lat, decimals), round(lng, decimals))
+
+
 def _haversine_km(
     *,
     lat1: float,

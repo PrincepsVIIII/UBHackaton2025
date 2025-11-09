@@ -4,10 +4,13 @@ FastAPI dependency utilities.
 
 from __future__ import annotations
 
-from fastapi import Depends, HTTPException, status
+from typing import Optional
+
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import decode_token
 from app.db.session import get_db
 from app.models import RoleEnum, User
@@ -83,3 +86,24 @@ async def get_current_volunteer(
             detail="Volunteer role required.",
         )
     return current_user
+
+
+async def require_admin_user(
+    current_user: User = Depends(get_current_user),
+    admin_secret: Optional[str] = Header(default=None, alias="X-Admin-Secret"),
+) -> User:
+    """
+    Validates that the caller has admin privileges either by email allowlist or
+    providing the configured admin secret.
+    """
+
+    if current_user.email.lower() in settings.admin_email_allowlist:
+        return current_user
+
+    if settings.admin_secret and admin_secret == settings.admin_secret:
+        return current_user
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Admin privileges required.",
+    )

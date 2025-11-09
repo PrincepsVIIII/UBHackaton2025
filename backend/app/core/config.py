@@ -31,10 +31,16 @@ class Settings(BaseSettings):
         env="ACCESS_TOKEN_EXPIRE_MINUTES",
         description="Expiry window for session tokens issued after login.",
     )
-    login_token_expire_minutes: int = Field(
-        15,
-        env="LOGIN_TOKEN_EXPIRE_MINUTES",
-        description="Expiry window for passwordless magic links.",
+    otp_expire_minutes: int = Field(
+        5,
+        env="OTP_EXPIRE_MINUTES",
+        description="Validity window for email one-time passcodes.",
+    )
+    max_open_requests_per_elder: int = Field(
+        1,
+        ge=1,
+        env="MAX_OPEN_REQUESTS_PER_ELDER",
+        description="Maximum number of concurrently open/assigned requests per elder.",
     )
     email_from: EmailStr = Field(
         "noreply@example.com",
@@ -49,6 +55,16 @@ class Settings(BaseSettings):
         True,
         env="EMAIL_USE_CONSOLE",
         description="When true, login links are printed to console instead of emailing.",
+    )
+    admin_emails_csv: str = Field(
+        "",
+        env="ADMIN_EMAILS",
+        description="Comma separated list of admin email addresses.",
+    )
+    admin_secret: Optional[str] = Field(
+        None,
+        env="ADMIN_SECRET",
+        description="Optional shared secret allowing admin endpoints.",
     )
     database_url: str = Field(
         default=f"sqlite:///{Path.cwd() / 'app.db'}",
@@ -66,6 +82,14 @@ class Settings(BaseSettings):
     port: Optional[int] = Field(default=8000, env="PORT")
     jwt_secret: Optional[str] = Field(default=None, env="JWT_SECRET")
     google_maps_api_key: Optional[str] = Field(default=None, env="GOOGLE_MAPS_API_KEY")
+
+    @property
+    def admin_email_allowlist(self) -> set[str]:
+        return {
+            email.strip().lower()
+            for email in self.admin_emails_csv.split(",")
+            if email.strip()
+        }
 
 @lru_cache
 def get_settings() -> Settings:

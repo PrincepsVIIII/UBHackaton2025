@@ -1,139 +1,119 @@
 """
-Passwordless email login flow.
+Email-based one-time passcode authentication flow.
 """
 
 from __future__ import annotations
 
-import logging
-import smtplib
-from email.message import EmailMessage
-from typing import Optional
+import hashlib
+import secrets
+from datetime import datetime, timedelta
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_current_user
 from app.core.config import settings
-from app.core.security import create_access_token, create_login_token, decode_token
+from app.core.security import create_access_token
 from app.db.session import get_db
-from app.models import RoleEnum, crud
-from app.schemas import LoginRequest, LoginRequestResponse, TokenResponse, UserResponse
-
-logger = logging.getLogger(__name__)
+from app.models import RoleEnum, User, crud
+from app.schemas import OTPRequest, OTPVerify, TokenResponse, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def _send_login_email(to_email: str, login_url: str) -> None:
-    """
-    Sends the magic login link to the provided email.
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
 
-    For hackathon/demo use-cases we default to printing the link to the console.
-    To integrate a production-ready service (e.g. SendGrid, Mailgun), replace the
-    console output with the provider SDK/API call below.
-    """
 
-    subject = f"{settings.app_name} login link"
-    body = (
-        f"Hello,\n\n"
-        f"Click the link below to finish signing in. "
-        f"This link will expire in {settings.login_token_expire_minutes} minutes.\n\n"
-        f"{login_url}\n\n"
-        f"If you did not request this link you can ignore this message."
-    )
+def _hash_code(code: str) -> str:
+    return hashlib.sha256(code.encode("utf-8")).hexdigest()
 
-    if settings.use_console_email or not settings.smtp_host:
-        logger.info("Magic link for %s -> %s", to_email, login_url)
-        print(f"[passwordless] Send to {to_email}: {login_url}")
-        return
 
-    # SMTP configuration is optional. Provide SMTP_HOST/SMTP_PORT/SMTP_USERNAME/SMTP_PASSWORD
-    # to send real emails. Replace this block with your email provider SDK as needed.
-    try:
-        msg = EmailMessage()
-        msg["Subject"] = subject
-        msg["From"] = settings.email_from
-        msg["To"] = to_email
-        msg.set_content(body)
-
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
-            server.starttls()
-            if settings.smtp_username and settings.smtp_password:
-                server.login(settings.smtp_username, settings.smtp_password)
-            server.send_message(msg)
-    except Exception:  # pragma: no cover - best effort for demo
-        logger.exception("Failed to send login email via SMTP; falling back to console output.")
-        print(f"[passwordless] Send to {to_email}: {login_url}")
+def _validate_edu_email(email: str) -> None:
+    if not email.endswith(".edu"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only .edu email addresses are eligible for login.",
+        )
 
 
 @router.post(
-    "/login-request",
-    response_model=LoginRequestResponse,
+    "/request-code",
     status_code=status.HTTP_202_ACCEPTED,
 )
-async def login_request(
-    payload: LoginRequest,
-    background_tasks: BackgroundTasks,
+async def request_code(
+    payload: OTPRequest,
     db: Session = Depends(get_db),
 ):
     """
-    Accepts an email + role and sends a one-time login link.
+    Generates and stores a one-time passcode for the specified email.
     """
 
-    role = payload.role
-    user = crud.get_user_by_email(db, payload.email)
+    normalized_email = _normalize_email(payload.email)
+    _validate_edu_email(normalized_email)
 
-    if user:
-        try:
-            crud.ensure_user_role(db, user, role)
-        except ValueError as exc:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    else:
-        user = crud.create_user(db, email=payload.email, role=role)
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    expires_at = datetime.utcnow() + timedelta(minutes=settings.otp_expire_minutes)
 
-    login_token = create_login_token({"email": payload.email, "role": role.value})
-    login_url = f"{settings.app_base_url.rstrip('/')}/auth/login?token={login_token}"
-
-    background_tasks.add_task(_send_login_email, payload.email, login_url)
-
-    # Returning the URL helps during hackathon demos where email may not be configured yet.
-    return LoginRequestResponse(
-        message="Login link sent. Check your inbox.",
-        login_url=login_url if settings.use_console_email else None,
+    crud.upsert_email_otp(
+        db,
+        email=normalized_email,
+        code_hash=_hash_code(code),
+        role=payload.role,
+        expires_at=expires_at,
     )
 
+    print(f"[auth][otp] Send code to {normalized_email}: {code}")
 
-@router.get("/login", response_model=TokenResponse)
-async def complete_login(
-    token: str = Query(..., description="Magic link token"),
+    return {"ok": True}
+
+
+@router.post("/verify-code", response_model=TokenResponse)
+async def verify_code(
+    payload: OTPVerify,
     db: Session = Depends(get_db),
 ):
     """
-    Validates the magic link token and returns a session JWT.
+    Verifies the submitted passcode and returns a session JWT.
     """
 
-    payload = decode_token(token)
-    if payload.get("type") != "login":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid login token.")
+    normalized_email = _normalize_email(payload.email)
+    _validate_edu_email(normalized_email)
 
-    email: Optional[str] = payload.get("email")
-    role_value: Optional[str] = payload.get("role")
+    otp_entry = crud.get_email_otp(db, normalized_email)
+    if otp_entry is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code.",
+        )
 
-    if not email or not role_value:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token payload incomplete.")
+    if otp_entry.expires_at < datetime.utcnow():
+        crud.delete_email_otp(db, otp_entry)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code.",
+        )
 
-    try:
-        role = RoleEnum(role_value)
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role in token.") from exc
+    if _hash_code(payload.code) != otp_entry.code_hash:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code.",
+        )
 
-    user = crud.get_user_by_email(db, email=email)
+    role: RoleEnum = otp_entry.role
+    crud.delete_email_otp(db, otp_entry)
+
+    user = crud.get_user_by_email(db, normalized_email)
     if user is None:
-        user = crud.create_user(db, email=email, role=role)
+        user = crud.create_user(db, email=normalized_email, role=role)
     else:
         try:
             crud.ensure_user_role(db, user, role)
         except ValueError as exc:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(exc),
+            ) from exc
 
     crud.touch_user_last_login(db, user)
 
@@ -150,4 +130,13 @@ async def complete_login(
         token_type="bearer",
         user=UserResponse.from_orm(user),
     )
+
+
+@router.get("/me", response_model=UserResponse)
+async def read_current_user(current_user: User = Depends(get_current_user)):
+    """
+    Returns the authenticated user's information using JWT bearer auth.
+    """
+
+    return UserResponse.from_orm(current_user)
 
