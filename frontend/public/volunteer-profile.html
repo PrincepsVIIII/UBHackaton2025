@@ -226,10 +226,12 @@
         const li = document.createElement('li');
         li.className = 'task-item';
       const addressText = request.address_override || request.address || 'Location available on map';
+        const elderName = request.elder_display_name || 'Unknown Elder';
         li.innerHTML = `
           <span class="task-status ${statusInfo.className}">${statusInfo.label}</span>
           <div class="task-details">
-            <h3>${request.title || 'Assistance Request'}</h3>
+            <h3>${elderName}</h3>
+            <p><strong>Request:</strong> ${request.title || 'Assistance Request'}</p>
             <p>${request.description || 'No additional description provided.'}</p>
           <p>${addressText}</p>
             <p><strong>Urgency:</strong> ${urgencyLabel}</p>

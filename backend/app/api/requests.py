@@ -55,6 +55,10 @@ def _resolved_address(help_request: HelpRequest) -> Optional[str]:
 
 
 def _help_request_to_schema(help_request: HelpRequest) -> HelpRequestResponse:
+    elder = help_request.elder
+    elder_display_name = None
+    if elder is not None:
+        elder_display_name = elder.email
     return HelpRequestResponse(
         id=help_request.id,
         elder_id=help_request.elder_id,
@@ -62,6 +66,7 @@ def _help_request_to_schema(help_request: HelpRequest) -> HelpRequestResponse:
         description=help_request.description,
         address_override=help_request.address_override,
         address=_resolved_address(help_request),
+        elder_display_name=elder_display_name,
         lat=help_request.lat,
         lng=help_request.lng,
         urgency_level=help_request.urgency_level,
@@ -78,12 +83,15 @@ def _help_request_to_schema(help_request: HelpRequest) -> HelpRequestResponse:
 
 def _help_request_list_item(help_request: HelpRequest) -> HelpRequestListItem:
     lat, lng = anonymize_coordinates(help_request.lat, help_request.lng)
+    elder = help_request.elder
+    elder_display_name = elder.email if elder is not None else None
     return HelpRequestListItem(
         id=help_request.id,
         title=help_request.title,
         description=help_request.description,
         address_override=help_request.address_override,
         address=_resolved_address(help_request),
+        elder_display_name=elder_display_name,
         lat=lat,
         lng=lng,
         urgency_level=help_request.urgency_level,

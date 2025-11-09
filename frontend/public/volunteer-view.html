@@ -293,6 +293,7 @@
       <h2>Request Details</h2>
       <p>Select a request to view details.</p>
       <div class="detail-item"><strong>Name:</strong> <span id="req-name">-</span></div>
+      <div class="detail-item"><strong>Request:</strong> <span id="req-title">-</span></div>
       <div class="detail-item"><strong>Address:</strong> <span id="req-address">-</span></div>
       <div class="detail-item"><strong>Description:</strong> <span id="req-desc">-</span></div>
     </div>
@@ -397,9 +398,12 @@
           const urgencyKey = request.urgency_level?.toLowerCase?.() || 'low';
           const urgencyLabel = request.urgency_level ? request.urgency_level.charAt(0).toUpperCase() + request.urgency_level.slice(1) : 'Low';
           const addressText = request.address_override || request.address || 'Location available on map';
+          const elderName = request.elder_display_name || 'Unknown Elder';
+
           li.innerHTML = `
             <div style="border-left: 4px solid ${urgencyColor[urgencyKey] || urgencyColor.low}; padding-left: 8px;">
-              <strong>${request.title}</strong><br>
+              <strong>${elderName}</strong><br>
+              <span>${request.title}</span><br>
               <small>${addressText}</small><br>
               <small style="color: ${urgencyColor[urgencyKey] || urgencyColor.low}"><strong>${urgencyLabel} Priority</strong></small>
             </div>
@@ -415,8 +419,10 @@
           // Build popup with claim button sourced from backend data
           const popupContent = document.createElement('div');
           const popupAddress = request.address_override || request.address || 'Location available on map';
+          const popupName = request.elder_display_name || 'Unknown Elder';
           popupContent.innerHTML = `
-            <strong>${request.title}</strong><br>
+            <strong>${popupName}</strong><br>
+            <em>${request.title}</em><br>
             <small>${request.description || 'No additional details'}</small><br>
             <small>${popupAddress}</small><br>
             <small style="color:${urgencyColor[urgencyKey] || urgencyColor.low}"><strong>${urgencyLabel} Priority</strong></small><br>
@@ -450,8 +456,11 @@
         });
 
         document.getElementById("req-name").textContent = req.title;
+        document.getElementById("req-name").textContent = req.elder_display_name || 'Unknown Elder';
+        document.getElementById("req-title").textContent = req.title || 'Assistance Request';
         document.getElementById("req-address").textContent = req.address_override || req.address || 'See map for location';
         document.getElementById("req-desc").textContent = req.description || 'No additional description provided.';
+
         document.getElementById("accept-btn").disabled = false;
         
         // Show details sidebar
@@ -501,6 +510,7 @@
 
         selectedRequest = null;
         document.getElementById("req-name").textContent = "-";
+        document.getElementById("req-title").textContent = "-";
         document.getElementById("req-address").textContent = "-";
         document.getElementById("req-desc").textContent = "-";
         document.getElementById("accept-btn").disabled = true;
@@ -628,11 +638,15 @@
 
           const title = document.createElement('div');
           title.style.fontWeight = 'bold';
-          title.innerHTML = request.title || 'Assistance Request';
+          title.innerHTML = request.elder_display_name || 'Unknown Elder';
 
           const address = document.createElement('div');
           address.style.fontSize = '0.9rem';
           address.textContent = request.address_override || request.address || 'See map for location';
+
+          const requestTitle = document.createElement('div');
+          requestTitle.style.fontSize = '0.9rem';
+          requestTitle.textContent = `Request: ${request.title || 'Assistance Request'}`;
 
           const urgency = document.createElement('div');
           urgency.style.fontSize = '0.9rem';
@@ -647,6 +661,7 @@
           status.textContent = `Status: ${statusInfo.label}`;
 
           li.appendChild(title);
+          li.appendChild(requestTitle);
           li.appendChild(address);
           li.appendChild(urgency);
           li.appendChild(status);
