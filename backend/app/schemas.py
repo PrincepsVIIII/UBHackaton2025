@@ -23,7 +23,7 @@ class UserResponse(UserBase):
     is_suspended: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ElderProfileBase(BaseModel):
@@ -40,7 +40,7 @@ class ElderProfileResponse(ElderProfileBase):
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class VolunteerProfileBase(BaseModel):
@@ -58,7 +58,7 @@ class VolunteerProfileResponse(VolunteerProfileBase):
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class MeResponse(BaseModel):
@@ -66,7 +66,7 @@ class MeResponse(BaseModel):
     profile: Optional[Union[ElderProfileResponse, VolunteerProfileResponse]] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class OTPRequest(BaseModel):
@@ -113,7 +113,7 @@ class AssignmentResponse(BaseModel):
     completed_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class HelpRequestResponse(HelpRequestBase):
@@ -128,7 +128,7 @@ class HelpRequestResponse(HelpRequestBase):
     current_assignment: Optional[AssignmentResponse] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class HelpRequestListItem(BaseModel):
@@ -140,7 +140,7 @@ class HelpRequestListItem(BaseModel):
     status: RequestStatusEnum
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class HelpRequestScoreResponse(BaseModel):

@@ -55,7 +55,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
-    role = Column(Enum(RoleEnum, name="user_role_enum"), nullable=True)
+    role = Column(Enum(RoleEnum, name="user_role_enum", values_callable=lambda x: [e.value for e in x]), nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
     is_suspended = Column(Boolean, nullable=False, default=False)
@@ -189,7 +189,7 @@ class EmailOTP(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), nullable=False, index=True)
     code_hash = Column(String(128), nullable=False)
-    role = Column(Enum(RoleEnum, name="email_otp_role_enum"), nullable=False)
+    role = Column(Enum(RoleEnum, name="email_otp_role_enum", values_callable=lambda x: [e.value for e in x]), nullable=False)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
