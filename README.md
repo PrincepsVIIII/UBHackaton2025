@@ -1,9 +1,10 @@
 # UBHackaton2025
 
 Created by:
-Jay Shoemaker
-Rowan Sayers-Fay
-Johnny Chen
+Jay Shoemaker,
+Rowan Sayers-Fay,
+Johnny Chen,
+Ethan Fleury
 
 ## Backend (Phase 1) – Buffalo Winter Elder Help Routing
 
