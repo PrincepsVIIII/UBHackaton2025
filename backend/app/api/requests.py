@@ -45,6 +45,15 @@ def _active_assignment_schema(help_request: HelpRequest) -> AssignmentResponse |
     return AssignmentResponse.from_orm(active_assignment) if active_assignment else None
 
 
+def _resolved_address(help_request: HelpRequest) -> Optional[str]:
+    if help_request.address_override:
+        return help_request.address_override
+    elder = help_request.elder
+    if elder and elder.elder_profile:
+        return elder.elder_profile.address
+    return None
+
+
 def _help_request_to_schema(help_request: HelpRequest) -> HelpRequestResponse:
     return HelpRequestResponse(
         id=help_request.id,
@@ -52,6 +61,7 @@ def _help_request_to_schema(help_request: HelpRequest) -> HelpRequestResponse:
         title=help_request.title,
         description=help_request.description,
         address_override=help_request.address_override,
+        address=_resolved_address(help_request),
         lat=help_request.lat,
         lng=help_request.lng,
         urgency_level=help_request.urgency_level,
@@ -73,6 +83,7 @@ def _help_request_list_item(help_request: HelpRequest) -> HelpRequestListItem:
         title=help_request.title,
         description=help_request.description,
         address_override=help_request.address_override,
+        address=_resolved_address(help_request),
         lat=lat,
         lng=lng,
         urgency_level=help_request.urgency_level,

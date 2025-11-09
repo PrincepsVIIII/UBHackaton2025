@@ -119,6 +119,7 @@ class AssignmentResponse(BaseModel):
 class HelpRequestResponse(HelpRequestBase):
     id: int
     elder_id: int
+    address: Optional[str] = None
     status: RequestStatusEnum
     created_at: datetime
     assigned_at: Optional[datetime] = None
@@ -136,6 +137,7 @@ class HelpRequestListItem(BaseModel):
     title: str
     description: Optional[str] = None
     address_override: Optional[str] = None
+    address: Optional[str] = None
     lat: float
     lng: float
     urgency_level: UrgencyLevelEnum
