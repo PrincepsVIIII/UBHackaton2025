@@ -67,7 +67,7 @@ class Settings(BaseSettings):
         description="Optional shared secret allowing admin endpoints.",
     )
     database_url: str = Field(
-        default=f"sqlite:///{Path.cwd() / 'app.db'}",
+        default="sqlite:///./app.db",
         env="DATABASE_URL",
     )
 

@@ -10,9 +10,10 @@ services:
       - "8000:8000"
     env_file:
       - ../.env
-    volumes:
+    # volumes:
       # Persist the SQLite database on the host for easy inspection/reset during the hackathon.
-      - ../backend/app.db:/app/backend/app.db
+      # Note: Database is now created inside container. Use docker exec to access it.
+      # - ../backend/app.db:/app/backend/app.db
     restart: unless-stopped
 
   frontend:

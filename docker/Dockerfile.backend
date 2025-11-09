@@ -26,8 +26,14 @@ COPY ../backend ./backend
 # Switch into backend project directory for runtime.
 WORKDIR /app/backend
 
+# Create data directory for SQLite database
+RUN mkdir -p /app/backend/data && chmod 777 /app/backend/data
+
 # Expose FastAPI default port.
 EXPOSE 8000
+
+# Set DATABASE_URL environment variable to use the data directory
+ENV DATABASE_URL="sqlite:////app/backend/data/app.db"
 
 # NOTE: Update SECRET_KEY / APP_BASE_URL in ../.env before building for non-local deployments.
 
