@@ -29,11 +29,11 @@ def _hash_code(code: str) -> str:
     return hashlib.sha256(code.encode("utf-8")).hexdigest()
 
 
-def _validate_edu_email(email: str) -> None:
-    if not email.endswith(".edu"):
+def _validate_role_email_constraint(email: str, role: RoleEnum) -> None:
+    if role == RoleEnum.VOLUNTEER and not email.endswith(".edu"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only .edu email addresses are eligible for login.",
+            detail="Volunteer accounts must use a .edu email address.",
         )
 
 
@@ -50,8 +50,6 @@ async def request_code(
     """
 
     normalized_email = _normalize_email(payload.email)
-    _validate_edu_email(normalized_email)
-
     code = f"{secrets.randbelow(1_000_000):06d}"
     expires_at = datetime.utcnow() + timedelta(minutes=settings.otp_expire_minutes)
 
@@ -78,7 +76,6 @@ async def verify_code(
     """
 
     normalized_email = _normalize_email(payload.email)
-    _validate_edu_email(normalized_email)
 
     otp_entry = crud.get_email_otp(db, normalized_email)
     if otp_entry is None:
@@ -86,6 +83,8 @@ async def verify_code(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired verification code.",
         )
+
+    _validate_role_email_constraint(normalized_email, otp_entry.role)
 
     if otp_entry.expires_at < datetime.utcnow():
         crud.delete_email_otp(db, otp_entry)

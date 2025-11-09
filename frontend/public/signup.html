@@ -154,7 +154,6 @@
 
 	<script>
 		const API_BASE = "http://localhost:8000";
-		const EDU_REGEX = /@.+\.edu$/i;
 
 		const signupForm = document.getElementById('signupForm');
 		const roleVolunteer = document.getElementById('roleVolunteer');
@@ -192,16 +191,9 @@
 			const name = document.getElementById('name').value.trim();
 			const email = document.getElementById('email').value.trim();
 			const address = document.getElementById('address').value.trim();
-			const EDU_REGEX = /@.+\.edu$/i;
 
 			if (!name || !email) {
 				status.textContent = 'Please enter your name and email.';
-				status.style.color = '#dc2626';
-				return;
-			}
-
-			if (!EDU_REGEX.test(email)) {
-				status.textContent = 'Email must end with .edu';
 				status.style.color = '#dc2626';
 				return;
 			}

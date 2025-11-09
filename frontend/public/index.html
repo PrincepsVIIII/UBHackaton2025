@@ -144,7 +144,7 @@
     <p>New user? <a href="/signup.html">Sign up here</a></p>
 
     <form id="loginForm">
-      <input type="email" id="email" placeholder="Email (.edu required)" required />
+      <input type="email" id="email" placeholder="Email (you@example.com)" required />
       <button type="submit" id="requestBtn">Request Code</button>
     </form>
 
@@ -177,17 +177,13 @@
       e.preventDefault();
       const email = emailInput.value.trim();
 
-      if (!EDU_REGEX.test(email)) {
-        status.textContent = 'Email must end with .edu';
-        status.style.color = '#dc2626';
-        return;
-      }
-
       status.textContent = 'Requesting code...';
       status.style.color = '#4b5563';
 
       try {
-        const rolesToTry = ['volunteer', 'elder'];
+        const rolesToTry = EDU_REGEX.test(email)
+          ? ['volunteer', 'elder']
+          : ['elder', 'volunteer'];
         let codeRequested = false;
         let lastErrorMessage = 'Failed to send verification code.';
 
