@@ -83,8 +83,7 @@
   <div class="container">
     <h2>Secure Sign-In</h2>
     <form id="loginForm">
-      <input type="text" id="username" placeholder="Username" required />
-      <input type="password" id="password" placeholder="Password" required />
+      <input type="email" id="email" placeholder="Email" required />
       <button type="submit">Login</button>
     </form>
     <div id="status">Not signed in</div>
@@ -100,18 +99,17 @@
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
+      const email = document.getElementById('email').value;
 
       const res = await fetch('http://localhost:8000/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ email })
       });
 
       const data = await res.json();
       if (res.ok) {
-        status.textContent = `Signed in as: ${data.username}`;
+        status.textContent = `Signed in as: ${data.email}`;
         status.style.color = '#16a34a';
       } else {
         status.textContent = data.detail || 'Login failed';
