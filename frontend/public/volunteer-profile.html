@@ -225,16 +225,31 @@
 
         const li = document.createElement('li');
         li.className = 'task-item';
+      const addressText = request.address_override || request.address || 'Location available on map';
         li.innerHTML = `
           <span class="task-status ${statusInfo.className}">${statusInfo.label}</span>
           <div class="task-details">
             <h3>${request.title || 'Assistance Request'}</h3>
             <p>${request.description || 'No additional description provided.'}</p>
-            <p>${request.address_override || 'Location available on map'}</p>
+          <p>${addressText}</p>
             <p><strong>Urgency:</strong> ${urgencyLabel}</p>
           </div>
           <span class="task-date">${dateToDisplay || ''}</span>
         `;
+
+      if (!isHistorySection && request.status === 'assigned') {
+        const details = li.querySelector('.task-details');
+        if (details) {
+          const completeButton = document.createElement('button');
+          completeButton.textContent = 'Mark Completed';
+          completeButton.style.marginTop = '0.5rem';
+          completeButton.addEventListener('click', () =>
+            markRequestCompleted(request.id, completeButton)
+          );
+          details.appendChild(completeButton);
+        }
+      }
+
         return li;
       }
 
@@ -296,6 +311,41 @@
 
       loadAssignments('active', activeList, 'No active assignments yet.');
       loadAssignments('history', historyList, 'No completed assignments yet.');
+
+      async function markRequestCompleted(requestId, button) {
+        if (!requestId) return;
+
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Completing...';
+
+        try {
+          const response = await fetch(`${API_BASE}/requests/${requestId}/complete`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Failed to mark request as completed.');
+          }
+
+          alert('Request marked as completion pending approval.');
+          await Promise.all([
+            loadAssignments('active', activeList, 'No active assignments yet.'),
+            loadAssignments('history', historyList, 'No completed assignments yet.'),
+          ]);
+        } catch (error) {
+          console.error('Error marking request completed:', error);
+          alert(error.message || 'Network error while marking request completed.');
+        } finally {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      }
     });
   </script>
 </body>
