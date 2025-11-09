@@ -396,10 +396,11 @@
 
           const urgencyKey = request.urgency_level?.toLowerCase?.() || 'low';
           const urgencyLabel = request.urgency_level ? request.urgency_level.charAt(0).toUpperCase() + request.urgency_level.slice(1) : 'Low';
+          const addressText = request.address_override || request.address || 'Location available on map';
           li.innerHTML = `
             <div style="border-left: 4px solid ${urgencyColor[urgencyKey] || urgencyColor.low}; padding-left: 8px;">
               <strong>${request.title}</strong><br>
-              <small>${request.address_override || 'Location available on map'}</small><br>
+              <small>${addressText}</small><br>
               <small style="color: ${urgencyColor[urgencyKey] || urgencyColor.low}"><strong>${urgencyLabel} Priority</strong></small>
             </div>
           `;
@@ -413,9 +414,11 @@
 
           // Build popup with claim button sourced from backend data
           const popupContent = document.createElement('div');
+          const popupAddress = request.address_override || request.address || 'Location available on map';
           popupContent.innerHTML = `
             <strong>${request.title}</strong><br>
             <small>${request.description || 'No additional details'}</small><br>
+            <small>${popupAddress}</small><br>
             <small style="color:${urgencyColor[urgencyKey] || urgencyColor.low}"><strong>${urgencyLabel} Priority</strong></small><br>
           `;
 

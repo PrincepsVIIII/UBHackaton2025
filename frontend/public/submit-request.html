@@ -302,17 +302,35 @@
       const createdDate = request.created_at
         ? new Date(request.created_at).toLocaleDateString()
         : '';
+      const addressText =
+        request.address_override ||
+        request.address ||
+        'Address on file';
 
       li.innerHTML = `
         <span class="task-status ${statusInfo.className}">${statusInfo.label}</span>
         <div class="task-details">
           <h3>${request.title}</h3>
           <p>${request.description || ''}</p>
-          <p>${request.address_override || 'Address on file'}</p>
+          <p>${addressText}</p>
           <p><strong>Urgency:</strong> ${request.urgency_level ? request.urgency_level.charAt(0).toUpperCase() + request.urgency_level.slice(1) : 'Unknown'}</p>
         </div>
         <span class="task-date">${createdDate}</span>
       `;
+
+      if (request.status === 'completion_pending_approval') {
+        const details = li.querySelector('.task-details');
+        if (details) {
+          const approveButton = document.createElement('button');
+          approveButton.textContent = 'Approve Completion';
+          approveButton.className = 'submit-btn';
+          approveButton.style.marginTop = '0.75rem';
+          approveButton.addEventListener('click', () =>
+            approveCompletion(request.id, approveButton)
+          );
+          details.appendChild(approveButton);
+        }
+      }
 
       return li;
     }
@@ -538,6 +556,38 @@
       await fetchRequests();
       startAutoRefresh();
     });
+
+    async function approveCompletion(requestId, button) {
+      if (!requestId) return;
+
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Approving...';
+
+      try {
+        const response = await fetch(`${API_BASE}/requests/${requestId}/approve-completion`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || 'Failed to approve completion.');
+        }
+
+        alert('Request marked as completed.');
+        await fetchRequests();
+      } catch (error) {
+        console.error('Error approving completion:', error);
+        alert(error.message || 'Network error while approving completion.');
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
   </script>
 </body>
 </html>
