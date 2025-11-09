@@ -91,6 +91,7 @@
       <input type="text" id="code" placeholder="Enter 6-digit code" maxlength="6" pattern="\d{6}" required />
       <button type="button" id="verifyBtn">Verify Code</button>
     </div>
+    <div id="status">Not signed in</div>
   </div>
 
   <footer>
@@ -109,22 +110,20 @@
       const email = document.getElementById('email').value;
       userEmail = email;
 
-      status.textContent = 'Checking account...';
+      status.textContent = 'Requesting code...';
       status.style.color = '#4b5563';
 
-      // First check if user exists by trying to get their info
-      // For existing users, we need to determine their role
-      // We'll try both roles - the backend will reject if wrong
-      const roles = ['elder', 'volunteer'];
-      let codeRequested = false;
-
-      for (const role of roles) {
+      try {
+        // Try volunteer role first (most common for login)
+        console.log(`Requesting code for ${email}...`);
         const res = await fetch(`${API_BASE}/auth/request-code`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, role })
+          body: JSON.stringify({ email, role: 'volunteer' })
         });
 
+        console.log(`Response status: ${res.status}`);
+        
         if (res.ok) {
           status.textContent = 'Code sent! Check backend console for OTP.';
           status.style.color = '#16a34a';
@@ -132,13 +131,15 @@
           codeSection.style.display = 'flex';
           codeSection.style.flexDirection = 'column';
           codeSection.style.gap = '1rem';
-          codeRequested = true;
-          break;
+        } else {
+          const errorData = await res.json();
+          console.error('Error:', errorData);
+          status.textContent = errorData.detail || 'Failed to send code';
+          status.style.color = '#dc2626';
         }
-      }
-
-      if (!codeRequested) {
-        status.textContent = 'Account not found. Please sign up first.';
+      } catch (err) {
+        console.error('Network error:', err);
+        status.textContent = 'Network error. Check console for details.';
         status.style.color = '#dc2626';
       }
     });
@@ -171,11 +172,11 @@
         // Redirect based on role
         setTimeout(() => {
           if (data.user.role === 'volunteer') {
-            window.location.href = '/volunteer-view.html';
+            window.location.replace('/volunteer-view.html');
           } else if (data.user.role === 'elder') {
-            window.location.href = '/submit-report.html';
+            window.location.replace('/submit-report.html');
           } else {
-            window.location.href = '/guest-view.html';
+            window.location.replace('/guest-view.html');
           }
         }, 1000);
       } else {
