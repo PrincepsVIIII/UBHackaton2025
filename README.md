@@ -40,6 +40,32 @@ python -m venv .venv
 pip install -r backend/requirements.txt
 ```
 
+### Database Migrations (Alembic)
+
+**First time setup or after pulling new migrations:**
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+**Creating a new migration after model changes:**
+
+```bash
+cd backend
+alembic revision --autogenerate -m "Description of changes"
+# Review the generated migration file, then commit it
+alembic upgrade head
+```
+
+**Reset database (wipe and reapply all migrations):**
+
+```bash
+cd backend
+rm -f app.db  # or delete data/app.db in Docker
+alembic upgrade head
+```
+
 ### Run the Development Server
 
 ```bash
@@ -48,6 +74,17 @@ uvicorn main:app --reload
 ```
 
 The API will be available at `http://127.0.0.1:8000`. Visit `http://127.0.0.1:8000/docs` for the interactive Swagger UI.
+
+### Docker Workflow
+
+**Build and run:**
+
+```bash
+cd docker
+docker-compose up --build -d
+```
+
+**Migrations run automatically** when the backend container starts. Database is stored in `/app/backend/data/app.db` inside the container.
 
 ### Lifecycle Flow Examples
 
