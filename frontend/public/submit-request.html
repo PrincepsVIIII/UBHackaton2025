@@ -259,76 +259,279 @@
   </div>
 
   <script>
-    // Example tasks
-    const activeTasks = [
-      {
-        id: 1,
-        name: "Jay Shoemaker",
-        address: "892 Richmond Ave, Buffalo, NY",
-        description: "Need help picking up cough drops at around 2PM",
-        status: "active",
-        date: "Nov 8, 2025"
-      }
-    ];
-    const taskHistory = [
-      {
-        id: 2,
-        name: "John Smith",
-        address: "456 Main St, Buffalo, NY",
-        description: "Grocery delivery completed.",
-        status: "completed",
-        date: "Nov 7, 2025"
-      }
-    ];
+    const API_BASE = 'http://localhost:8000';
+    const DEFAULT_COORDS = { lat: 42.8864, lng: -78.8784 };
+    const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
 
-    function createTaskElement(task) {
+    if (!token || !storedUser) {
+      window.location.replace('/index.html');
+    }
+
+    const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+    if (parsedUser && parsedUser.role !== 'elder') {
+      alert('Only elders can access the submit request page.');
+      window.location.replace('/index.html');
+    }
+
+    const activeList = document.getElementById('active-tasks');
+    const historyList = document.getElementById('task-history');
+    const overlay = document.getElementById('formOverlay');
+    const addBtn = document.getElementById('openForm');
+    const closeBtn = document.getElementById('closeForm');
+    const submitBtn = document.getElementById('submitForm');
+
+    let elderProfile = null;
+    let activeRequests = [];
+    let historyRequests = [];
+    let refreshTimer = null;
+
+    const statusDisplay = {
+      open: { label: 'Pending', className: 'status-active' },
+      assigned: { label: 'Assigned', className: 'status-active' },
+      completion_pending_approval: { label: 'Awaiting Approval', className: 'status-active' },
+      completed: { label: 'Completed', className: 'status-completed' },
+      cancelled: { label: 'Cancelled', className: 'status-completed' },
+    };
+
+    function createTaskElement(request) {
       const li = document.createElement('li');
       li.className = 'task-item';
-      const statusClass = task.status === 'active' ? 'status-active' : 'status-completed';
-      const statusText = task.status === 'active' ? 'Active' : 'Completed';
+
+      const statusInfo = statusDisplay[request.status] || statusDisplay.open;
+      const createdDate = request.created_at
+        ? new Date(request.created_at).toLocaleDateString()
+        : '';
+
       li.innerHTML = `
-        <span class="task-status ${statusClass}">${statusText}</span>
+        <span class="task-status ${statusInfo.className}">${statusInfo.label}</span>
         <div class="task-details">
-          <h3>${task.name}</h3>
-          <p>${task.description}</p>
-          <p>${task.address}</p>
+          <h3>${request.title}</h3>
+          <p>${request.description || ''}</p>
+          <p>${request.address_override || 'Address on file'}</p>
+          <p><strong>Urgency:</strong> ${request.urgency_level ? request.urgency_level.charAt(0).toUpperCase() + request.urgency_level.slice(1) : 'Unknown'}</p>
         </div>
-        <span class="task-date">${task.date}</span>
+        <span class="task-date">${createdDate}</span>
       `;
+
       return li;
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const activeList = document.getElementById('active-tasks');
-      const historyList = document.getElementById('task-history');
-      activeTasks.forEach(t => activeList.appendChild(createTaskElement(t)));
-      taskHistory.forEach(t => historyList.appendChild(createTaskElement(t)));
+    function renderRequests() {
+      activeList.innerHTML = '';
+      historyList.innerHTML = '';
 
-      // Modal behavior
-      const overlay = document.getElementById('formOverlay');
-      document.getElementById('openForm').addEventListener('click', () => {
-        overlay.classList.add('active');
-      });
-      document.getElementById('closeForm').addEventListener('click', () => {
-        overlay.classList.remove('active');
-      });
-      overlay.addEventListener('click', e => {
-        if (e.target === overlay) overlay.classList.remove('active');
-      });
+      if (!activeRequests.length) {
+        const empty = document.createElement('li');
+        empty.className = 'task-item';
+        empty.innerHTML = `
+          <span class="task-status status-active">Info</span>
+          <div class="task-details">
+            <h3>No active requests yet</h3>
+            <p>Create a new request using the + button.</p>
+          </div>
+          <span class="task-date"></span>
+        `;
+        activeList.appendChild(empty);
+      } else {
+        activeRequests.forEach((req) => activeList.appendChild(createTaskElement(req)));
+      }
 
-      // Form submission
-      document.getElementById('submitForm').addEventListener('click', e => {
-        e.preventDefault();
-        const data = {
-          priority: document.getElementById('priority').value,
-          estimateTime: document.getElementById('estimateTime').value,
-          help: document.getElementById('helpDetails').value.trim(),
-          notes: document.getElementById('additionalNotes').value.trim(),
+      if (!historyRequests.length) {
+        const empty = document.createElement('li');
+        empty.className = 'task-item';
+        empty.innerHTML = `
+          <span class="task-status status-completed">Info</span>
+          <div class="task-details">
+            <h3>No completed requests yet</h3>
+            <p>Once requests are finished, they will appear here.</p>
+          </div>
+          <span class="task-date"></span>
+        `;
+        historyList.appendChild(empty);
+      } else {
+        historyRequests.forEach((req) => historyList.appendChild(createTaskElement(req)));
+      }
+    }
+
+    async function loadProfile() {
+      try {
+        const response = await fetch(`${API_BASE}/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            window.location.replace('/index.html');
+            return;
+          }
+          console.warn('Failed to load profile');
+          return;
+        }
+
+        const data = await response.json();
+        elderProfile = data?.profile || null;
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    }
+
+    async function fetchRequests() {
+      try {
+        const [activeRes, historyRes] = await Promise.all([
+          fetch(`${API_BASE}/elder/requests?status=active`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }),
+          fetch(`${API_BASE}/elder/requests?status=history`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }),
+        ]);
+
+        if (activeRes.status === 401 || historyRes.status === 401) {
+          window.location.replace('/index.html');
+          return;
+        }
+
+        if (!activeRes.ok || !historyRes.ok) {
+          console.error('Failed to fetch elder requests.');
+          return;
+        }
+
+        const activeData = await activeRes.json();
+        const historyData = await historyRes.json();
+
+        activeRequests = Array.isArray(activeData) ? activeData : [];
+        historyRequests = Array.isArray(historyData) ? historyData : [];
+
+        renderRequests();
+      } catch (error) {
+        console.error('Network error while loading elder requests:', error);
+      }
+    }
+
+    function startAutoRefresh() {
+      if (refreshTimer) {
+        clearInterval(refreshTimer);
+      }
+      refreshTimer = setInterval(() => {
+        fetchRequests();
+      }, 30000);
+    }
+
+    addBtn.addEventListener('click', () => overlay.classList.add('active'));
+    closeBtn.addEventListener('click', () => overlay.classList.remove('active'));
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.classList.remove('active');
+    });
+
+    function resetForm() {
+      document.getElementById('helpDetails').value = '';
+      document.getElementById('additionalNotes').value = '';
+      document.getElementById('contactMethod').value = '';
+      document.getElementById('priority').value = 'High';
+    }
+
+    function buildDescription(details, notes, contact) {
+      const parts = [];
+      if (details) parts.push(details);
+      if (notes) parts.push(`Additional notes: ${notes}`);
+      if (contact) parts.push(`Preferred contact: ${contact}`);
+      return parts.join('\n\n');
+    }
+
+    async function resolveCoordinates() {
+      if (!('geolocation' in navigator)) {
+        return DEFAULT_COORDS;
+      }
+
+      return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          }),
+          () => resolve(DEFAULT_COORDS),
+          { enableHighAccuracy: false, timeout: 5000 }
+        );
+      });
+    }
+
+    submitBtn.addEventListener('click', async () => {
+      const priority = document.getElementById('priority').value;
+      const help = document.getElementById('helpDetails').value.trim();
+      const notes = document.getElementById('additionalNotes').value.trim();
+      const contact = document.getElementById('contactMethod').value.trim();
+
+      if (!help) {
+        alert('Please fill out the Help Request Details.');
+        return;
+      }
+
+      if (!elderProfile || !elderProfile.address) {
+        alert('Please complete your elder profile with an address before creating requests.');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      try {
+        const coords = await resolveCoordinates();
+        const description = buildDescription(help, notes, contact);
+        const urgencyLevel = priority.toLowerCase();
+        const title = help.length <= 80 ? help : `${help.slice(0, 77)}...`;
+
+        const payload = {
+          title: title || `${priority} priority assistance needed`,
+          description,
+          address_override: elderProfile.address,
+          lat: coords.lat,
+          lng: coords.lng,
+          urgency_level: urgencyLevel,
+          weather_factor: 0.0,
         };
-        if (!data.help) return alert("Please fill out the request details before submitting.");
-        alert(`Submitted:\nPriority: ${data.priority}\nEstimate Time: ${data.estimateTime} minutes\nHelp: ${data.help}\nNotes: ${data.notes}`);
+
+        const response = await fetch(`${API_BASE}/help-request`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || 'Failed to create request.');
+        }
+
+        const created = await response.json();
+        alert('Request created successfully!');
+
+        activeRequests.unshift(created);
+        renderRequests();
+        resetForm();
         overlay.classList.remove('active');
-      });
+        fetchRequests();
+      } catch (error) {
+        console.error('Error creating help request:', error);
+        alert(error.message || 'Network error while creating request.');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit';
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadProfile();
+      await fetchRequests();
+      startAutoRefresh();
     });
   </script>
 </body>

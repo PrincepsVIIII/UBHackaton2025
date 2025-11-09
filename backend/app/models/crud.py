@@ -153,6 +153,18 @@ def list_open_help_requests(db: Session) -> Iterable[HelpRequest]:
     )
 
 
+def list_help_requests_for_elder(
+    db: Session,
+    elder_id: int,
+    statuses: Optional[Iterable[RequestStatusEnum]] = None,
+) -> list[HelpRequest]:
+    stmt = select(HelpRequest).where(HelpRequest.elder_id == elder_id)
+    if statuses:
+        stmt = stmt.where(HelpRequest.status.in_(list(statuses)))
+    stmt = stmt.order_by(HelpRequest.created_at.desc())
+    return db.execute(stmt).scalars().all()
+
+
 def create_assignment(
     db: Session,
     *,

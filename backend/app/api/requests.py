@@ -169,6 +169,44 @@ async def list_open_requests(
 
 
 @router.get(
+    "/elder/requests",
+    response_model=List[HelpRequestResponse],
+)
+async def list_elder_requests(
+    status: Optional[str] = Query(
+        None,
+        description="Filter by request status grouping: active or history.",
+    ),
+    current_elder: User = Depends(get_current_elder),
+    db: Session = Depends(get_db),
+):
+    elder = db.merge(current_elder)
+
+    status_groups: dict[str, list[RequestStatusEnum]] = {
+        "active": [
+            RequestStatusEnum.OPEN,
+            RequestStatusEnum.ASSIGNED,
+            RequestStatusEnum.COMPLETION_PENDING_APPROVAL,
+        ],
+        "history": [
+            RequestStatusEnum.COMPLETED,
+            RequestStatusEnum.CANCELLED,
+        ],
+    }
+
+    if status is not None and status not in status_groups:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid status filter. Use 'active' or 'history'.",
+        )
+
+    help_requests = crud.list_help_requests_for_elder(
+        db, elder.id, status_groups.get(status)
+    )
+    return [_help_request_to_schema(help_request) for help_request in help_requests]
+
+
+@router.get(
     "/requests/{request_id}",
     response_model=HelpRequestResponse,
 )

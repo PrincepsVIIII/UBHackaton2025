@@ -297,6 +297,10 @@
       <div class="detail-item"><strong>Description:</strong> <span id="req-desc">-</span></div>
     </div>
     <button id="accept-btn" disabled>Accept Request</button>
+    <div id="active-assignments" style="margin-top: 1rem;">
+      <h3>My Active Assignments</h3>
+      <ul id="assignment-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;"></ul>
+    </div>
   </div>
 
   <!-- Custom JS -->
@@ -304,8 +308,19 @@
     // Wait for DOM to be ready
     document.addEventListener("DOMContentLoaded", function() {
 
+      const API_BASE = 'http://localhost:8000';
+      const DEFAULT_CENTER = [42.8864, -78.8784];
+      const DEFAULT_ZOOM = 12;
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Missing authentication token. Please sign in again.');
+        window.location.replace('/index.html');
+        return;
+      }
+
       // Initialize map (Buffalo, NY)
-      const map = L.map("map").setView([42.8864, -78.8784], 12);
+      const map = L.map("map").setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
       // Add OpenStreetMap tiles
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -338,20 +353,12 @@
       };
       legend.addTo(map);
 
-      // Placeholder request data (replace with backend fetch)
-      const requests = [
-        { id: 1, name: "John Doe", address: "123 Main St, Buffalo, NY", desc: "Needs assistance with grocery delivery. Has dietary restrictions (gluten-free).", lat: 42.8925, lng: -78.8718, urgency: "Medium" },
-        { id: 2, name: "Mary Smith", address: "245 Elmwood Ave, Buffalo, NY", desc: "Requires medication pickup from CVS Pharmacy. Prescription ready for pickup.", lat: 42.913, lng: -78.878, urgency: "High" },
-        { id: 3, name: "James Lee", address: "60 Niagara St, Buffalo, NY", desc: "Needs winter clothing donations - specifically warm coat (size L) and boots (size 10).", lat: 42.89, lng: -78.89, urgency: "Low" },
-        { id: 4, name: "Sarah Johnson", address: "389 Delaware Ave, Buffalo, NY", desc: "Senior citizen needs help with snow removal from driveway and walkway.", lat: 42.9012, lng: -78.8725, urgency: "Medium" },
-        { id: 5, name: "Robert Chen", address: "567 Forest Ave, Buffalo, NY", desc: "Technology assistance needed - help setting up new phone for emergency contacts.", lat: 42.915, lng: -78.885, urgency: "Low" },
-        { id: 6, name: "Emily Martinez", address: "892 Richmond Ave, Buffalo, NY", desc: "Transportation needed to medical appointment on Monday at 2PM.", lat: 42.9198, lng: -78.888, urgency: "High" },
-        { id: 7, name: "David Wilson", address: "145 Bryant St, Buffalo, NY", desc: "Pet care assistance - needs help walking dog for next 3 days while recovering from surgery.", lat: 42.9032, lng: -78.8741, urgency: "Medium" },
-        { id: 8, name: "Patricia Brown", address: "734 Hertel Ave, Buffalo, NY", desc: "Needs help organizing and cleaning garage before winter. Heavy lifting required.", lat: 42.9472, lng: -78.8556, urgency: "Low" }
-      ];
-
       let selectedRequest = null;
       const markers = new Map();
+      let requests = [];
+      let refreshTimer = null;
+      let isFetching = false;
+      let assignments = [];
 
       // Populate request list and add map markers (sorted by urgency)
       function populateRequestList() {
@@ -363,42 +370,60 @@
         markers.clear();
 
         // Map urgency to a sorting weight (higher = more urgent)
-        const urgencyWeight = { High: 3, Medium: 2, Low: 1 };
+        const urgencyWeight = { high: 3, medium: 2, low: 1 };
 
         // Copy and sort requests by urgency (High > Medium > Low)
         const sorted = requests.slice().sort((a, b) => {
-          const wa = urgencyWeight[a.urgency] || 0;
-          const wb = urgencyWeight[b.urgency] || 0;
+          const wa = urgencyWeight[a.request.urgency_level?.toLowerCase?.() || ''] || 0;
+          const wb = urgencyWeight[b.request.urgency_level?.toLowerCase?.() || ''] || 0;
           // If same urgency, keep original order (stable-ish)
           return wb - wa;
         });
 
-        const urgencyColor = { High: "#dc3545", Medium: "#ffc107", Low: "#28a745" };
+        const urgencyColor = { high: "#dc3545", medium: "#ffc107", low: "#28a745" };
 
-        sorted.forEach((req) => {
+        sorted.forEach(({ request }) => {
           const li = document.createElement("li");
           li.className = "request-item";
 
+          const urgencyKey = request.urgency_level?.toLowerCase?.() || 'low';
+          const urgencyLabel = request.urgency_level ? request.urgency_level.charAt(0).toUpperCase() + request.urgency_level.slice(1) : 'Low';
           li.innerHTML = `
-            <div style="border-left: 4px solid ${urgencyColor[req.urgency]}; padding-left: 8px;">
-              <strong>${req.name}</strong><br>
-              <small>${req.address}</small><br>
-              <small style="color: ${urgencyColor[req.urgency]}"><strong>${req.urgency} Priority</strong></small>
+            <div style="border-left: 4px solid ${urgencyColor[urgencyKey] || urgencyColor.low}; padding-left: 8px;">
+              <strong>${request.title}</strong><br>
+              <small>${request.address_override || 'Location available on map'}</small><br>
+              <small style="color: ${urgencyColor[urgencyKey] || urgencyColor.low}"><strong>${urgencyLabel} Priority</strong></small>
             </div>
           `;
 
-          li.addEventListener("click", () => selectRequest(req));
+          li.addEventListener("click", () => selectRequest(request));
           requestList.appendChild(li);
 
-          // Use a colored SVG pin marker so pins reflect urgency
-          const marker = L.marker([req.lat, req.lng], {
-            icon: createPinIcon(urgencyColor[req.urgency])
+          const marker = L.marker([request.lat ?? request.latitude ?? DEFAULT_CENTER[0], request.lng ?? request.longitude ?? DEFAULT_CENTER[1]], {
+            icon: createPinIcon(urgencyColor[urgencyKey] || urgencyColor.low)
           }).addTo(map);
 
-          // Remove the small default close 'x' in the popup
-          marker.bindPopup(`<b>${req.name}</b><br>${req.address}`, { closeButton: false });
-          marker.on("click", () => selectRequest(req));
-          markers.set(req.id, marker);
+          // Build popup with claim button sourced from backend data
+          const popupContent = document.createElement('div');
+          popupContent.innerHTML = `
+            <strong>${request.title}</strong><br>
+            <small>${request.description || 'No additional details'}</small><br>
+            <small style="color:${urgencyColor[urgencyKey] || urgencyColor.low}"><strong>${urgencyLabel} Priority</strong></small><br>
+          `;
+
+          const claimButton = document.createElement('button');
+          claimButton.textContent = 'Claim';
+          claimButton.style.marginTop = '6px';
+          claimButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            claimRequest(request.id);
+          });
+
+          popupContent.appendChild(claimButton);
+
+          marker.bindPopup(popupContent, { closeButton: false });
+          marker.on("click", () => selectRequest(request));
+          markers.set(request.id, marker);
         });
       }
 
@@ -408,14 +433,14 @@
 
         document.querySelectorAll(".request-item").forEach((item) => {
           item.classList.remove("active");
-          if (item.querySelector("strong").textContent === req.name) {
+          if (item.querySelector("strong").textContent === req.title) {
             item.classList.add("active");
           }
         });
 
-        document.getElementById("req-name").textContent = req.name;
-        document.getElementById("req-address").textContent = req.address;
-        document.getElementById("req-desc").textContent = req.desc;
+        document.getElementById("req-name").textContent = req.title;
+        document.getElementById("req-address").textContent = req.address_override || req.address || 'See map for location';
+        document.getElementById("req-desc").textContent = req.description || 'No additional description provided.';
         document.getElementById("accept-btn").disabled = false;
         
         // Show details sidebar
@@ -424,11 +449,13 @@
         // Wait for sidebar animation to complete before updating map
         setTimeout(() => {
           map.invalidateSize();
-
+ 
           const marker = markers.get(req.id);
           if (!marker) {
-            // fallback: just set view if marker is missing
-            map.setView([req.lat, req.lng], 14);
+            map.setView([
+              req.lat ?? req.latitude ?? DEFAULT_CENTER[0],
+              req.lng ?? req.longitude ?? DEFAULT_CENTER[1]
+            ], 14);
             return;
           }
 
@@ -440,34 +467,16 @@
             marker.openPopup();
           });
 
-          map.setView([req.lat, req.lng], 14);
+          map.setView([
+            req.lat ?? req.latitude ?? DEFAULT_CENTER[0],
+            req.lng ?? req.longitude ?? DEFAULT_CENTER[1]
+          ], 14);
         }, 300);
       }
 
-      // Accept request
       document.getElementById("accept-btn").addEventListener("click", () => {
         if (!selectedRequest) return;
-        alert(`Request from ${selectedRequest.name} has been accepted!`);
-
-        // Example backend call placeholder:
-        // fetch('/api/accept', { method: 'POST', body: JSON.stringify({ id: selectedRequest.id }) });
-
-        markers.get(selectedRequest.id).remove();
-        requests.splice(requests.findIndex((r) => r.id === selectedRequest.id), 1);
-
-        selectedRequest = null;
-        document.getElementById("req-name").textContent = "-";
-        document.getElementById("req-address").textContent = "-";
-        document.getElementById("req-desc").textContent = "-";
-        document.getElementById("accept-btn").disabled = true;
-        document.querySelector('.main-content').classList.remove("details-visible");
-
-        // Wait for sidebar animation to complete before updating map
-        setTimeout(() => {
-          map.invalidateSize();
-        }, 300);
-
-        populateRequestList();
+        claimRequest(selectedRequest.id);
       });
 
       // Close details sidebar and any open popup
@@ -496,7 +505,240 @@
       document.getElementById("close-details").addEventListener("click", closeDetailsAndPopup);
 
       // Initialize
-      populateRequestList();
+      function renderLoadingState() {
+        const list = document.getElementById('request-list');
+        list.innerHTML = '<li class="request-item">Loading open requests...</li>';
+      }
+
+      function renderEmptyState() {
+        const list = document.getElementById('request-list');
+        list.innerHTML = '<li class="request-item">No open requests available.</li>';
+      }
+
+      async function fetchOpenRequests() {
+        if (isFetching) {
+          return;
+        }
+        isFetching = true;
+        // Fetch open requests from backend
+        renderLoadingState();
+
+        try {
+          const response = await fetch(`${API_BASE}/requests/open?volunteer_lat=${DEFAULT_CENTER[0]}&volunteer_lng=${DEFAULT_CENTER[1]}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Failed to fetch open requests:', errorData);
+            alert(errorData.detail || 'Failed to load open requests.');
+            renderEmptyState();
+            isFetching = false;
+            return;
+          }
+
+          const data = await response.json();
+          requests = Array.isArray(data) ? data : [];
+
+          if (!requests.length) {
+            renderEmptyState();
+            markers.forEach((marker) => marker.remove());
+            markers.clear();
+            isFetching = false;
+            return;
+          }
+
+          populateRequestList(); // Re-render markers and list with fresh data
+          isFetching = false;
+        } catch (error) {
+          console.error('Network error while loading requests:', error);
+          alert('Network error while loading requests. Please try again.');
+          renderEmptyState();
+          isFetching = false;
+        }
+      }
+
+      // Handle backend claim flow for a request
+      async function claimRequest(requestId) {
+        if (!requestId) return;
+
+        try {
+          const response = await fetch(`${API_BASE}/requests/${requestId}/claim`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            alert(errorData.detail || 'Failed to claim request.');
+            return;
+          }
+
+          alert('Request claimed successfully!');
+
+          const marker = markers.get(requestId);
+          if (marker) {
+            marker.remove();
+            markers.delete(requestId);
+          }
+
+          requests = requests.filter(({ request }) => request.id !== requestId);
+          populateRequestList();
+          fetchAssignments();
+          closeDetailsAndPopup();
+        } catch (error) {
+          console.error('Error claiming request:', error);
+          alert('Network error while claiming request.');
+        }
+      }
+
+      function renderAssignments() {
+        const list = document.getElementById('assignment-list');
+        list.innerHTML = '';
+
+        if (!assignments.length) {
+          const empty = document.createElement('li');
+          empty.textContent = 'No active assignments yet.';
+          list.appendChild(empty);
+          return;
+        }
+
+        assignments.forEach(({ request, assignment }) => {
+          const li = document.createElement('li');
+          li.style.border = '1px solid #ccc';
+          li.style.borderRadius = '8px';
+          li.style.padding = '0.75rem';
+          li.style.background = 'white';
+
+          const title = document.createElement('div');
+          title.style.fontWeight = 'bold';
+          title.innerHTML = request.title || 'Assistance Request';
+
+          const address = document.createElement('div');
+          address.style.fontSize = '0.9rem';
+          address.textContent = request.address_override || request.address || 'See map for location';
+
+          const urgency = document.createElement('div');
+          urgency.style.fontSize = '0.9rem';
+          urgency.style.fontWeight = '500';
+          urgency.textContent = `Urgency: ${request.urgency_level ? request.urgency_level.charAt(0).toUpperCase() + request.urgency_level.slice(1) : 'Unknown'}`;
+
+          const status = document.createElement('div');
+          status.style.fontSize = '0.9rem';
+          status.style.marginBottom = '0.5rem';
+          status.textContent = `Status: ${request.status || 'assigned'}`;
+
+          li.appendChild(title);
+          li.appendChild(address);
+          li.appendChild(urgency);
+          li.appendChild(status);
+
+          if (request.status === 'assigned') {
+            const completeButton = document.createElement('button');
+            completeButton.textContent = 'Mark Completed';
+            completeButton.addEventListener('click', () => {
+              markRequestCompleted(request.id);
+            });
+            li.appendChild(completeButton);
+          }
+
+          list.appendChild(li);
+        });
+      }
+
+      // Fetch volunteer's active assignments from backend
+      async function fetchAssignments() {
+        try {
+          const response = await fetch(`${API_BASE}/volunteer/active`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Failed to load assignments:', errorData);
+            assignments = [];
+            renderAssignments();
+            return;
+          }
+
+          const data = await response.json();
+
+          if (!data) {
+            assignments = [];
+            renderAssignments();
+            return;
+          }
+
+          assignments = Array.isArray(data) ? data : [data].filter(Boolean);
+          assignments = assignments.filter(Boolean).map((item) => {
+            if (item.request && item.assignment) {
+              return item;
+            }
+            if (item.request) {
+              return { request: item.request, assignment: item.assignment || item };
+            }
+            if (item.assignment) {
+              return { request: item.request || item.assignment.request, assignment: item.assignment };
+            }
+            return null;
+          }).filter(Boolean);
+
+          renderAssignments();
+        } catch (error) {
+          console.error('Network error while loading assignments:', error);
+          assignments = [];
+          renderAssignments();
+        }
+      }
+
+      async function markRequestCompleted(requestId) {
+        if (!requestId) return;
+
+        try {
+          const response = await fetch(`${API_BASE}/requests/${requestId}/complete`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            alert(errorData.detail || 'Failed to mark request as completed.');
+            return;
+          }
+
+          alert('Request marked as completion pending approval.');
+          fetchAssignments();
+          fetchOpenRequests();
+        } catch (error) {
+          console.error('Error marking request completed:', error);
+          alert('Network error while marking request completed.');
+        }
+      }
+
+      function startAutoRefresh() {
+        if (refreshTimer) {
+          clearInterval(refreshTimer);
+        }
+        // Periodically fetch latest open requests from backend
+        refreshTimer = setInterval(() => {
+          fetchOpenRequests();
+          fetchAssignments();
+        }, 30000);
+      }
+
+      fetchOpenRequests();
+      fetchAssignments();
+      startAutoRefresh();
     });
   </script>
 </body>

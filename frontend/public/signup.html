@@ -132,7 +132,7 @@
 
 			<div class="role-row" role="radiogroup" aria-label="User type">
 				<div class="role-box" id="roleVolunteer" data-role="volunteer">Volunteer</div>
-				<div class="role-box" id="roleRequestor" data-role="requestor">Requestor</div>
+				<div class="role-box" id="roleRequestor" data-role="elder">Elder / Requestor</div>
 			</div>
 
 			<input type="text" id="address" placeholder="Address (Street, City, State)" required />
@@ -153,7 +153,9 @@
 	</footer>
 
 	<script>
-		// Simple client-side signup + confirmation flow (mock)
+		const API_BASE = "http://localhost:8000";
+		const EDU_REGEX = /@.+\.edu$/i;
+
 		const signupForm = document.getElementById('signupForm');
 		const roleVolunteer = document.getElementById('roleVolunteer');
 		const roleRequestor = document.getElementById('roleRequestor');
@@ -163,8 +165,9 @@
 		const verifyBtn = document.getElementById('verifyBtn');
 
 		let selectedRole = null;
-		let currentCode = null;
-		let signupData = null;
+		let userEmail = "";
+		let savedAddress = "";
+		let savedContactMethod = "Email";
 
 		function clearSelection() {
 			roleVolunteer.classList.remove('selected');
@@ -183,19 +186,28 @@
 			selectedRole = roleRequestor.getAttribute('data-role');
 		});
 
-		function generateCode() {
-			return Math.floor(100000 + Math.random() * 900000).toString();
-		}
-
-		signupForm.addEventListener('submit', (e) => {
+		signupForm.addEventListener('submit', async (e) => {
 			e.preventDefault();
 
 			const name = document.getElementById('name').value.trim();
 			const email = document.getElementById('email').value.trim();
 			const address = document.getElementById('address').value.trim();
+			const EDU_REGEX = /@.+\.edu$/i;
 
 			if (!name || !email) {
 				status.textContent = 'Please enter your name and email.';
+				status.style.color = '#dc2626';
+				return;
+			}
+
+			if (!EDU_REGEX.test(email)) {
+				status.textContent = 'Email must end with .edu';
+				status.style.color = '#dc2626';
+				return;
+			}
+
+			if (!address) {
+				status.textContent = 'Please enter your address.';
 				status.style.color = '#dc2626';
 				return;
 			}
@@ -206,27 +218,39 @@
 				return;
 			}
 
-			// Save data locally (in a real app, you'd POST to the backend)
-			signupData = { name, email, address, role: selectedRole };
+			savedAddress = address;
+			savedContactMethod = 'Email';
 
-			currentCode = generateCode();
+			status.textContent = 'Requesting verification code...';
+			status.style.color = '#4b5563';
 
-			// Show UX: code sent
-			status.textContent = 'Confirmation code sent to your email. (Check console in this mock)';
-			status.style.color = '#16a34a';
+			try {
+				const response = await fetch(`${API_BASE}/auth/request-code`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ email, role: selectedRole })
+				});
 
-			// For demo purposes we print the code to the console so you can complete verification
-			// In a real app the code would be emailed
-			console.info('Mock confirmation code for', email, ':', currentCode);
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({}));
+					throw new Error(errorData.detail || 'Failed to send verification code.');
+				}
 
-			// Hide form and show code input
-			signupForm.style.display = 'none';
-			codeSection.style.display = 'flex';
-			codeSection.style.flexDirection = 'column';
-			codeSection.style.gap = '0.6rem';
+				userEmail = email;
+				status.textContent = 'Code sent! Check your email (or backend console) for the OTP.';
+				status.style.color = '#16a34a';
+				signupForm.style.display = 'none';
+				codeSection.style.display = 'flex';
+				codeSection.style.flexDirection = 'column';
+				codeSection.style.gap = '0.6rem';
+			} catch (err) {
+				console.error('Error requesting signup OTP:', err);
+				status.textContent = err.message || 'Network error while requesting code.';
+				status.style.color = '#dc2626';
+			}
 		});
 
-		verifyBtn.addEventListener('click', () => {
+		verifyBtn.addEventListener('click', async () => {
 			const entered = codeInput.value.trim();
 			if (!entered || entered.length !== 6) {
 				status.textContent = 'Enter the 6-digit code.';
@@ -234,22 +258,66 @@
 				return;
 			}
 
-			if (entered === currentCode) {
-				status.textContent = `Email confirmed. Welcome, ${signupData.name}!`;
+			status.textContent = 'Verifying code...';
+			status.style.color = '#4b5563';
+
+			try {
+				const response = await fetch(`${API_BASE}/auth/verify-code`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ email: userEmail, code: entered })
+				});
+
+				const data = await response.json().catch(() => ({}));
+
+				if (!response.ok) {
+					throw new Error(data.detail || 'Verification failed. Please try again.');
+				}
+
+				localStorage.setItem('token', data.access_token);
+				localStorage.setItem('user', JSON.stringify(data.user));
+
+				if (selectedRole === 'elder' && savedAddress) {
+					try {
+						await fetch(`${API_BASE}/profile/elder`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'Authorization': `Bearer ${data.access_token}`,
+							},
+							body: JSON.stringify({
+								address: savedAddress,
+								mobility_notes: '',
+								preferred_contact_method: savedContactMethod,
+							}),
+						});
+					} catch (profileError) {
+						console.warn('Unable to create elder profile automatically:', profileError);
+					}
+				}
+
+				status.textContent = `Email confirmed. Welcome, ${data.user.email}!`;
 				status.style.color = '#16a34a';
 
-				// You may want to persist the user by calling backend here. For now we store in localStorage
-				localStorage.setItem('signedUpUser', JSON.stringify(signupData));
-
-				// Replace codeSection with confirmed message
 				codeSection.style.display = 'none';
 				const confirmed = document.createElement('div');
 				confirmed.style.marginTop = '0.75rem';
-				confirmed.textContent = 'Your email is confirmed — you can now sign in.';
+				confirmed.textContent = 'Your email is confirmed — redirecting to your dashboard...';
 				confirmed.style.color = '#065f46';
 				document.querySelector('.container').appendChild(confirmed);
-			} else {
-				status.textContent = 'Incorrect code. Please try again.';
+
+				setTimeout(() => {
+					if (data.user.role === 'volunteer') {
+						window.location.replace('/volunteer-view.html');
+					} else if (data.user.role === 'elder') {
+						window.location.replace('/submit-request.html');
+					} else {
+						window.location.replace('/guest-view.html');
+					}
+				}, 1000);
+			} catch (err) {
+				console.error('Error verifying signup OTP:', err);
+				status.textContent = err.message || 'Network error while verifying code.';
 				status.style.color = '#dc2626';
 			}
 		});
